@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { X, FileText, Image, Code, FileJson } from 'lucide-react';
-import { useDiagramContext } from '../../context/DiagramContext';
+import React, { useState } from "react";
+import { X, FileText, Image, Code, FileJson } from "lucide-react";
+import { useDiagramContext } from "../../store/DiagramContext";
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -18,14 +18,14 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => {
     try {
       setExporting(true);
       setError(null);
-      
+
       // Call the export function
       await exportDiagram(format);
-      
+
       // Close the modal after successful export
       onClose();
     } catch (err) {
-      console.error('Export error:', err);
+      console.error("Export error:", err);
       setError(`Failed to export as ${format.toUpperCase()}: ${err}`);
     } finally {
       setExporting(false);
@@ -44,48 +44,48 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => {
             <X size={20} />
           </button>
         </div>
-        
+
         <div className="p-4">
           <p className="text-sm text-gray-600 mb-4">
             Select a format to export your diagram:
           </p>
-          
+
           {error && (
             <div className="mb-4 p-3 text-sm bg-red-50 text-red-600 rounded-md">
               {error}
             </div>
           )}
-          
+
           <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={() => handleExport('pdf')}
+              onClick={() => handleExport("pdf")}
               disabled={exporting}
               className="flex items-center justify-center p-3 border rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FileText className="mr-2 text-red-500" size={20} />
               <span>PDF</span>
             </button>
-            
+
             <button
-              onClick={() => handleExport('png')}
+              onClick={() => handleExport("png")}
               disabled={exporting}
               className="flex items-center justify-center p-3 border rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Image className="mr-2 text-green-500" size={20} />
               <span>PNG</span>
             </button>
-            
+
             <button
-              onClick={() => handleExport('json')}
+              onClick={() => handleExport("json")}
               disabled={exporting}
               className="flex items-center justify-center p-3 border rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FileJson className="mr-2 text-blue-500" size={20} />
               <span>JSON</span>
             </button>
-            
+
             <button
-              onClick={() => handleExport('xml')}
+              onClick={() => handleExport("xml")}
               disabled={exporting}
               className="flex items-center justify-center p-3 border rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >

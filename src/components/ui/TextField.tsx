@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface TextFieldProps {
   label: string;
@@ -7,18 +7,16 @@ interface TextFieldProps {
   multiline?: boolean;
 }
 
-const TextField: React.FC<TextFieldProps> = ({ 
-  label, 
-  value, 
+const TextField: React.FC<TextFieldProps> = ({
+  label,
+  value,
   onChange,
-  multiline = false 
+  multiline = false,
 }) => {
   return (
     <div>
-      <label className="block text-sm text-gray-600 mb-1">
-        {label}
-      </label>
-      
+      <label className="block text-sm text-gray-600 mb-1">{label}</label>
+
       {multiline ? (
         <textarea
           value={value}
