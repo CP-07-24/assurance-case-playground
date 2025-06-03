@@ -1,6 +1,6 @@
-import React from 'react';
-import { useDiagram } from '../../hooks/useDiagram';
-import { Shape } from '../../types/shapes';
+import React from "react";
+import { useDiagram } from "../../hooks/useDiagram";
+import { Shape } from "../../types/shapes";
 
 interface ShapeItemProps {
   shape: Shape;
@@ -8,19 +8,19 @@ interface ShapeItemProps {
 
 const ShapeItem: React.FC<ShapeItemProps> = ({ shape }) => {
   const { addShapeToCanvas } = useDiagram();
-  
+
   const handleDragStart = (e: React.DragEvent) => {
-    e.dataTransfer.setData('shape', JSON.stringify(shape));
-    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData("shape", JSON.stringify(shape));
+    e.dataTransfer.effectAllowed = "copy";
   };
-  
+
   const handleClick = () => {
     addShapeToCanvas(shape);
   };
-  
+
   return (
-    <div 
-      className="flex flex-col items-center p-1 cursor-grab hover:bg-gray-50 rounded-sm border border-gray-200"
+    <div
+      className="flex flex-col items-center p-2 cursor-grab hover:bg-gray-50 rounded-sm border border-gray-200"
       draggable
       onDragStart={handleDragStart}
       onClick={handleClick}

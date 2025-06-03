@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { ChevronUp, ChevronDown } from 'lucide-react';
-import ShapeItem from './ShapeItem';
-import { Shape } from '../../types/shapes';
+import React, { useState } from "react";
+import { ChevronUp, ChevronDown } from "lucide-react";
+import ShapeItem from "./ShapeItem";
+import { Shape } from "../../types/shapes";
 
 interface ShapeCategoryProps {
   title: string;
@@ -9,13 +9,19 @@ interface ShapeCategoryProps {
   filter: string;
 }
 
-const ShapeCategory: React.FC<ShapeCategoryProps> = ({ title, shapes, filter }) => {
+const ShapeCategory: React.FC<ShapeCategoryProps> = ({
+  title,
+  shapes,
+  filter,
+}) => {
   const [isOpen, setIsOpen] = useState(true);
-  
-  const filteredShapes = filter 
-    ? shapes.filter(shape => shape.title.toLowerCase().includes(filter.toLowerCase()))
+
+  const filteredShapes = filter
+    ? shapes.filter((shape) =>
+        shape.title.toLowerCase().includes(filter.toLowerCase())
+      )
     : shapes;
-    
+
   if (filter && filteredShapes.length === 0) {
     return null;
   }
@@ -29,7 +35,7 @@ const ShapeCategory: React.FC<ShapeCategoryProps> = ({ title, shapes, filter }) 
         <span>{title}</span>
         {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
       </button>
-      
+
       {isOpen && (
         <div className="grid grid-cols-3 gap-2 px-3 pb-3">
           {filteredShapes.map((shape) => (

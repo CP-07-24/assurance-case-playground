@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import TopBar from './TopBar';
 import ToolBar from './ToolBar';
@@ -11,6 +12,7 @@ const MainLayout: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'shapes' | 'ai'>('shapes');
   const [isExportOpen, setExportOpen] = useState(false); // 🔹 Modal state
 
+
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Top navigation */}
@@ -23,12 +25,14 @@ const MainLayout: React.FC = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* Left sidebar */}
         <div className="w-72 flex flex-col border-r border-gray-200 bg-white">
+
           <div className="h-12 shrink-0 border-b border-gray-200">
             <TabsBar activeTab={activeTab} setActiveTab={setActiveTab} />
           </div>
           <div className="flex-1 flex flex-col overflow-hidden">
             <LeftSidebar activeTab={activeTab} />
           </div>
+
         </div>
 
         {/* Canvas area */}
@@ -37,7 +41,11 @@ const MainLayout: React.FC = () => {
         </div>
 
         {/* Right panel */}
-        <div className="w-80 border-l border-gray-200 bg-white overflow-y-auto">
+        <div
+          id="properties-panel"
+          data-preserve-selection="true"
+          className="w-80 border-l border-gray-200 bg-white overflow-y-auto"
+        >
           <RightPanel />
         </div>
       </div>

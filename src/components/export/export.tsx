@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { X, FileText, Image, Code, FileJson } from 'lucide-react';
 import { useDiagramContext } from '../../context/DiagramContext';
 
+
 interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -23,11 +24,13 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => {
     try {
       setExporting(true);
       setError(null);
+
       await exportDiagram(format);
       onClose();
     } catch (err) {
       console.error('Export error:', err);
       setError(`Failed to export as ${format.toUpperCase()}: ${String(err)}`);
+
     } finally {
       setExporting(false);
     }
@@ -48,9 +51,11 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => {
           >
             <X size={20} />
           </button>
+
         </header>
 
         <section className="p-4">
+
           <p className="text-sm text-gray-600 mb-4">
             Select a format to export your diagram:
           </p>
@@ -66,6 +71,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => {
           )}
 
           <div className="grid grid-cols-2 gap-3">
+
             {exportOptions.map(({ format, label, icon: Icon, color, testId }) => (
               <button
                 key={format}
@@ -78,6 +84,43 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => {
                 <span>{label}</span>
               </button>
             ))}
+
+            <button
+              onClick={() => handleExport("pdf")}
+              disabled={exporting}
+              className="flex items-center justify-center p-3 border rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FileText className="mr-2 text-red-500" size={20} />
+              <span>PDF</span>
+            </button>
+
+            <button
+              onClick={() => handleExport("png")}
+              disabled={exporting}
+              className="flex items-center justify-center p-3 border rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Image className="mr-2 text-green-500" size={20} />
+              <span>PNG</span>
+            </button>
+
+            <button
+              onClick={() => handleExport("json")}
+              disabled={exporting}
+              className="flex items-center justify-center p-3 border rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FileJson className="mr-2 text-blue-500" size={20} />
+              <span>JSON</span>
+            </button>
+
+            <button
+              onClick={() => handleExport("xml")}
+              disabled={exporting}
+              className="flex items-center justify-center p-3 border rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Code className="mr-2 text-purple-500" size={20} />
+              <span>XML</span>
+            </button>
+
           </div>
         </section>
       </div>
