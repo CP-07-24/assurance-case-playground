@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 export interface Shape {
   id: string;
@@ -15,23 +15,19 @@ export interface Connection {
   from: string;
   to: string;
   points: number[];
-  style: "line" | "arrow" | "doubleArrow" | "dashed" | "dotted";
 }
 
 export interface ShapeOnCanvas extends Shape {
   x: number;
   y: number;
   text?: string;
-  textX?: number;
-  textY?: number;
   idText?: string;
   value?: string;
   fontFamily?: string;
   fontSize?: number;
-  fontSizeId?: number;
   fontWeight?: string;
   fontStyle?: string;
-  align?: "left" | "center" | "right";
+  align?: 'left' | 'center' | 'right';
   textDecoration?: string;
   interLine?: string;
   description?: string;

@@ -1,40 +1,14 @@
 "use client"; // Wajib karena menggunakan hooks dan interaktivitas
-import React, { useState, useEffect } from "react";
-import {
-  Menu,
-  Type,
-  FolderKanban,
-  Edit,
-  HelpCircle,
-  Lightbulb,
-} from "lucide-react";
-import { useDiagramContext } from "../../store/DiagramContext";
-import MenuDropdown from "../ui/MenuDropdown";
-import { FcGoogle } from "react-icons/fc";
-import {
-  signInWithGoogle,
-  firebaseSignOut,
-  auth,
-} from "../../lib/firebase/auth";
-import { User } from "firebase/auth";
+import React, { useState, useEffect } from 'react';
+import { Menu, Type, FolderKanban, Edit, HelpCircle, Lightbulb } from 'lucide-react';
+import { useDiagramContext } from '../../context/DiagramContext';
+import MenuDropdown from '../ui/MenuDropdown';
+import { FcGoogle } from 'react-icons/fc';
+import { signInWithGoogle, firebaseSignOut, auth } from '../../lib/firebase/auth';
+import { User } from 'firebase/auth';
 
 const TopBar: React.FC = () => {
-  const {
-    toggleSidebar,
-    undo,
-    redo,
-    copyShape,
-    pasteShape,
-    selectAllShapes,
-    canUndo,
-    canRedo,
-    clipboard,
-    duplicateSelectedShapes,
-    deleteSelectedShapes,
-    shapes,
-    selectedIds,
-  } = useDiagramContext();
-
+  const { toggleSidebar } = useDiagramContext();
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,234 +23,25 @@ const TopBar: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // Handle keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Check if we're in an input field
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      ) {
-        return;
-      }
-
-      if (e.ctrlKey || e.metaKey) {
-        switch (e.key.toLowerCase()) {
-          case "z":
-            e.preventDefault();
-            if (e.shiftKey) {
-              redo();
-            } else {
-              undo();
-            }
-            break;
-          case "y":
-            e.preventDefault();
-            redo();
-            break;
-          case "c":
-            e.preventDefault();
-            copyShape();
-            break;
-          case "v":
-            e.preventDefault();
-            pasteShape();
-            break;
-          case "a":
-            e.preventDefault();
-            console.log("Ctrl+A detected, calling selectAllShapes");
-            selectAllShapes();
-            break;
-          case "d":
-            e.preventDefault();
-            // Duplicate functionality (copy then paste with offset)
-            copyShape();
-            setTimeout(() => pasteShape(30, 30), 10);
-            break;
-          case "x":
-            e.preventDefault();
-            // Cut functionality (copy then delete)
-            copyShape();
-            deleteSelectedShapes();
-            break;
-        }
-      }
-
-      // Delete key for deleting selected shapes
-      if (e.key === "Delete" || e.key === "Backspace") {
-        e.preventDefault();
-        deleteSelectedShapes();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    undo,
-    redo,
-    copyShape,
-    pasteShape,
-    selectAllShapes,
-    deleteSelectedShapes,
-    duplicateSelectedShapes,
-  ]);
-
-  const typographyMenuItems = [
-    {
-      label: "Font Family",
-      onClick: () => console.log("Font Family"),
-      shortcut: "",
-    },
-    {
-      label: "Font Size",
-      onClick: () => console.log("Font Size"),
-      shortcut: "",
-    },
-    {
-      label: "Text Style",
-      onClick: () => console.log("Text Style"),
-      shortcut: "",
-    },
-  ];
-
   const projectMenuItems = [
-    {
-      label: "New Project",
-      onClick: () => {
-        // Implement new project functionality
-        console.log("New Project - implement this");
-      },
-      shortcut: "Ctrl+N",
-    },
-    {
-      label: "Open Project",
-      onClick: () => {
-        // Implement open project functionality
-        console.log("Open Project - implement this");
-      },
-      shortcut: "Ctrl+O",
-    },
-    {
-      label: "Save Project",
-      onClick: () => {
-        // Implement save project functionality
-        console.log("Save Project - implement this");
-      },
-      shortcut: "Ctrl+S",
-    },
-    {
-      label: "Import",
-      onClick: () => {
-        // Implement import functionality
-        console.log("Import - implement this");
-      },
-      shortcut: "",
-    },
-    {
-      label: "Export",
-      onClick: () => {
-        // Implement export functionality
-        console.log("Export - implement this");
-      },
-      shortcut: "",
-    },
+    { label: 'New Project', onClick: () => console.log('New Project'), shortcut: '' },
+    { label: 'Import', onClick: () => console.log('Import'), shortcut: '' },
+    { label: 'Export', onClick: () => console.log('Export'), shortcut: '' }
   ];
 
   const editMenuItems = [
-    {
-      label: "Undo",
-      onClick: () => undo(),
-      shortcut: "Ctrl+Z",
-      disabled: !canUndo,
-    },
-    {
-      label: "Redo",
-      onClick: () => redo(),
-      shortcut: "Ctrl+Y",
-      disabled: !canRedo,
-    },
-    {
-      label: "Cut",
-      onClick: () => {
-        copyShape();
-        deleteSelectedShapes();
-      },
-      shortcut: "Ctrl+X",
-      disabled: selectedIds.length === 0,
-    },
-    {
-      label: "Copy",
-      onClick: () => copyShape(),
-      shortcut: "Ctrl+C",
-      disabled: selectedIds.length === 0,
-    },
-    {
-      label: "Paste",
-      onClick: () => pasteShape(),
-      shortcut: "Ctrl+V",
-      disabled: !clipboard,
-    },
-    {
-      label: "Duplicate",
-      onClick: () => {
-        duplicateSelectedShapes();
-      },
-      shortcut: "Ctrl+D",
-      disabled: selectedIds.length === 0,
-    },
-    {
-      label: "Select All",
-      onClick: () => selectAllShapes(),
-      shortcut: "Ctrl+A",
-      disabled: shapes.length === 0,
-    },
-    {
-      label: "Delete",
-      onClick: () => deleteSelectedShapes(),
-      shortcut: "Del",
-      disabled: selectedIds.length === 0,
-    },
+    { label: 'Undo', onClick: () => console.log('Undo'), shortcut: 'Ctrl+Z' },
+    { label: 'Redo', onClick: () => console.log('Redo'), shortcut: 'Ctrl+Y' },
+    { label: 'Cut', onClick: () => console.log('Cut'), shortcut: 'Ctrl+X' },
+    { label: 'Copy', onClick: () => console.log('Copy'), shortcut: 'Ctrl+C' },
+    { label: 'Paste', onClick: () => console.log('Paste'), shortcut: 'Ctrl+V' },
+    { label: 'Duplicate', onClick: () => console.log('Duplicate'), shortcut: 'Ctrl+D' },
+    { label: 'Select All', onClick: () => console.log('Select All'), shortcut: 'Ctrl+A' }
   ];
 
   const helpMenuItems = [
-    {
-      label: "Keyboard Shortcuts",
-      onClick: () => console.log("Keyboard Shortcuts"),
-      shortcut: "",
-    },
-    {
-      label: "User Guide",
-      onClick: () => console.log("User Guide"),
-      shortcut: "",
-    },
-    {
-      label: "Report Bug",
-      onClick: () => console.log("Report Bug"),
-      shortcut: "",
-    },
-    {
-      label: "Contact Support",
-      onClick: () => console.log("Contact Support"),
-      shortcut: "",
-    },
-  ];
-
-  const guidanceMenuItems = [
-    {
-      label: "Getting Started",
-      onClick: () => console.log("Getting Started"),
-      shortcut: "",
-    },
-    {
-      label: "Best Practices",
-      onClick: () => console.log("Best Practices"),
-      shortcut: "",
-    },
-    {
-      label: "Tips & Tricks",
-      onClick: () => console.log("Tips & Tricks"),
-      shortcut: "",
-    },
+    { label: 'Report Bug', onClick: () => console.log('Report Bug'), shortcut: '' },
+    { label: 'Contact Support', onClick: () => console.log('Contact Support'), shortcut: '' }
   ];
 
   const handleMenuClick = (menuId: string) => {
@@ -306,99 +71,83 @@ const TopBar: React.FC = () => {
         </button>
 
         <div className="flex ml-2">
-          {/* Typography Menu */}
           <div className="relative">
             <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "typography" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
-              onClick={() => handleMenuClick("typography")}
+              className={`px-3 py-1.5 text-sm font-medium ${activeMenu === 'typography' ? 'bg-gray-100' : 'hover:bg-gray-50'} rounded-md`}
+              onClick={() => handleMenuClick('typography')}
             >
               <div className="flex items-center">
                 <Type size={16} className="mr-1.5" />
                 Typography
               </div>
             </button>
-            {activeMenu === "typography" && (
-              <MenuDropdown items={typographyMenuItems} onClose={closeMenu} />
+            {activeMenu === 'typography' && (
+              <MenuDropdown items={[]} onClose={closeMenu} />
             )}
           </div>
 
-          {/* Project Menu */}
           <div className="relative">
             <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "project" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
-              onClick={() => handleMenuClick("project")}
+              className={`px-3 py-1.5 text-sm font-medium ${activeMenu === 'project' ? 'bg-gray-100' : 'hover:bg-gray-50'} rounded-md`}
+              onClick={() => handleMenuClick('project')}
             >
               <div className="flex items-center">
                 <FolderKanban size={16} className="mr-1.5" />
                 PROJECT
               </div>
             </button>
-            {activeMenu === "project" && (
+            {activeMenu === 'project' && (
               <MenuDropdown items={projectMenuItems} onClose={closeMenu} />
             )}
           </div>
 
-          {/* Edit Menu */}
           <div className="relative">
             <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "edit" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
-              onClick={() => handleMenuClick("edit")}
+              className={`px-3 py-1.5 text-sm font-medium ${activeMenu === 'edit' ? 'bg-gray-100' : 'hover:bg-gray-50'} rounded-md`}
+              onClick={() => handleMenuClick('edit')}
             >
               <div className="flex items-center">
                 <Edit size={16} className="mr-1.5" />
                 EDIT
               </div>
             </button>
-            {activeMenu === "edit" && (
+            {activeMenu === 'edit' && (
               <MenuDropdown items={editMenuItems} onClose={closeMenu} />
             )}
           </div>
 
-          {/* Help Menu */}
           <div className="relative">
             <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "help" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
-              onClick={() => handleMenuClick("help")}
+              className={`px-3 py-1.5 text-sm font-medium ${activeMenu === 'help' ? 'bg-gray-100' : 'hover:bg-gray-50'} rounded-md`}
+              onClick={() => handleMenuClick('help')}
             >
               <div className="flex items-center">
                 <HelpCircle size={16} className="mr-1.5" />
                 HELP
               </div>
             </button>
-            {activeMenu === "help" && (
+            {activeMenu === 'help' && (
               <MenuDropdown items={helpMenuItems} onClose={closeMenu} />
             )}
           </div>
 
-          {/* Guidance Menu */}
           <div className="relative">
             <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "guidance" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
-              onClick={() => handleMenuClick("guidance")}
+              className={`px-3 py-1.5 text-sm font-medium ${activeMenu === 'guidance' ? 'bg-gray-100' : 'hover:bg-gray-50'} rounded-md`}
+              onClick={() => handleMenuClick('guidance')}
             >
               <div className="flex items-center">
                 <Lightbulb size={16} className="mr-1.5" />
                 GUIDANCE
               </div>
             </button>
-            {activeMenu === "guidance" && (
-              <MenuDropdown items={guidanceMenuItems} onClose={closeMenu} />
+            {activeMenu === 'guidance' && (
+              <MenuDropdown items={[]} onClose={closeMenu} />
             )}
           </div>
         </div>
       </div>
 
-      {/* User Authentication Section */}
       <div className="flex items-center">
         {loading ? (
           <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
@@ -416,39 +165,21 @@ const TopBar: React.FC = () => {
                 />
               ) : (
                 <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full">
-                  {user.displayName?.charAt(0).toUpperCase() || "U"}
+                  {user.displayName?.charAt(0).toUpperCase() || 'U'}
                 </div>
               )}
               <span className="text-sm font-medium hidden md:inline-block">
-                {user.displayName || "User"}
+                {user.displayName || 'User'}
               </span>
             </div>
 
-            {/* User Dropdown Menu */}
-            <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-              <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
-                {user.email}
-              </div>
+            <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-md shadow-lg py-1 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
               <button
-                onClick={() => console.log("Profile Settings")}
+                onClick={handleSignOut}
                 className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
               >
-                Profile Settings
+                Sign Out
               </button>
-              <button
-                onClick={() => console.log("Account Preferences")}
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              >
-                Preferences
-              </button>
-              <div className="border-t border-gray-100 mt-1 pt-1">
-                <button
-                  onClick={handleSignOut}
-                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                >
-                  Sign Out
-                </button>
-              </div>
             </div>
           </div>
         ) : (

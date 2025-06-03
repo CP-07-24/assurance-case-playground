@@ -1,112 +1,74 @@
-// src/components/canvas/DiagramCanvas.tsx
-import React, { useRef, useEffect } from "react";
-import { Stage, Layer } from "react-konva";
-import { useDiagramContext } from "../../store/DiagramContext";
-import GridBackground from "./GridBackground";
-import DiagramShape from "./DiagramShape";
-import Connection from "./Connection";
-import { KonvaEventObject } from "konva/lib/Node";
+import React, { useCallback, useEffect, useRef } from 'react';
+import { Stage, Layer } from 'react-konva';
+import { useDiagramContext } from '../../context/DiagramContext';
+import GridBackground from './GridBackground';
+import DiagramShape from './DiagramShape';
+import Connection from './Connection';
+import { KonvaEventObject } from 'konva/lib/Node';
 
 const DiagramCanvas: React.FC = () => {
-  const stageRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  // Gunakan ref untuk menyimpan dimensi, hindari useState karena menyebabkan re-render
-  const dimensionsRef = useRef({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
 
   const {
     shapes,
     connections,
-    selectedIds, // Tambahkan selectedIds dari context
+    selectedId,
     setSelectedId,
     addShape,
     updateShapePosition,
     zoomLevel,
-    setStageSize, // Hati-hati dengan penggunaan ini
+    setStageSize,
     cancelConnection,
     isConnecting,
-    stageSize, // Gunakan nilai dari context langsung
-    clearSelection, // Tambahkan clearSelection untuk membersihkan seleksi
-    toggleShapeSelection, // Tambahkan untuk shift+click selection
+    stageRef
   } = useDiagramContext();
 
-  // Effect khusus untuk resize listener
-  useEffect(() => {
-    const updateSize = () => {
-      if (!containerRef.current) return;
-      const { width, height } = containerRef.current.getBoundingClientRect();
-      // Hindari pembaruan state yang tidak perlu
-      if (
-        Math.abs(width - dimensionsRef.current.width) > 2 ||
-        Math.abs(height - dimensionsRef.current.height) > 2
-      ) {
-        // Update ref dulu
-        dimensionsRef.current = { width, height };
-        // Lalu update context hanya jika ukuran berubah signifikan
-        setStageSize({ width, height });
-      }
-    };
-    // Jalankan sekali setelah mount
-    // Gunakan setTimeout untuk memastikan DOM telah di-render sepenuhnya
-    const initialTimer = setTimeout(updateSize, 0);
-    // Setup resize listener
-    window.addEventListener("resize", updateSize);
-    // Cleanup
-    return () => {
-      clearTimeout(initialTimer);
-      window.removeEventListener("resize", updateSize);
-    };
-  }, []); // Empty dependency array - hanya jalankan sekali
+  const updateSize = useCallback(() => {
+    if (!containerRef.current) return;
 
-  // Tambahkan effect untuk keyboard listener (Escape untuk clear selection)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        console.log("Escape key pressed, clearing selection");
-        clearSelection();
-        if (isConnecting) {
-          cancelConnection();
-        }
-      }
-    };
+    const { width, height } = containerRef.current.getBoundingClientRect();
 
-    window.addEventListener("keydown", handleKeyDown);
+    // Only update if size actually changed
+    setStageSize(prev => {
+      const roundedWidth = Math.round(width);
+      const roundedHeight = Math.round(height);
+      return (prev.width === roundedWidth && prev.height === roundedHeight)
+        ? prev
+        : { width: roundedWidth, height: roundedHeight };
+    });
+  }, [setStageSize]); // setStageSize is now stable
+
+  useEffect(() => {
+    updateSize();
+
+    // Add debounce to resize handler
+    const handleResize = debounce(updateSize, 100);
+    window.addEventListener('resize', handleResize);
 
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener('resize', handleResize);
     };
-  }, [clearSelection, cancelConnection, isConnecting]);
+  }, [updateSize]); // Now depends on memoized callback
 
-  // Tambahkan effect untuk click di luar canvas
+  function debounce<T extends (...args: any[]) => void>(fn: T, delay: number) {
+    let timeoutId: number;
+    return (...args: Parameters<T>) => {
+      clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(() => fn(...args), delay);
+    };
+  }
+
   useEffect(() => {
-    const handleDocumentClick = (e: MouseEvent) => {
-      // Periksa apakah target memiliki data-preserve-selection atau berada di dalamnya
-      const targetElement = e.target as HTMLElement;
-      const preserveSelectionElement = targetElement.closest(
-        '[data-preserve-selection="true"]'
-      );
+    updateSize();
 
-      if (preserveSelectionElement) {
-        return; // Keluar dari handler tanpa membersihkan seleksi
-      }
+    // Add debounce to resize handler
+    const handleResize = debounce(updateSize, 100);
+    window.addEventListener('resize', handleResize);
 
-      // Periksa apakah klik terjadi di luar canvas
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(targetElement)
-      ) {
-        clearSelection();
-      }
-    };
-
-    // Gunakan capture phase untuk menangkap event sebelum event lainnya
-    document.addEventListener("mousedown", handleDocumentClick, true);
     return () => {
-      document.removeEventListener("mousedown", handleDocumentClick, true);
+      window.removeEventListener('resize', handleResize);
     };
-  }, [clearSelection]);
+  }, [updateSize]); // Now depends on memoized callback
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -114,46 +76,34 @@ const DiagramCanvas: React.FC = () => {
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    const shapeData = e.dataTransfer.getData("shape");
+
+    const shapeData = e.dataTransfer.getData('shape');
     if (!shapeData) return;
+
     const shape = JSON.parse(shapeData);
-    const stageContainer = stageRef.current?.container();
-    if (!stageContainer) return;
+
+    const stageContainer = stageRef.current.container();
     const stagePos = stageContainer.getBoundingClientRect();
+
     const x = (e.clientX - stagePos.left) / zoomLevel;
     const y = (e.clientY - stagePos.top) / zoomLevel;
+
     addShape({
       ...shape,
       x,
       y,
-      id: Date.now().toString(),
+      id: Date.now().toString()
     });
   };
 
   const handleStageClick = (e: KonvaEventObject<MouseEvent>) => {
-    // Periksa apakah klik terjadi pada stage itu sendiri, bukan pada shape
     if (e.target === e.currentTarget) {
-      clearSelection();
+      setSelectedId(null);
       if (isConnecting) {
         cancelConnection();
       }
     }
   };
-
-  // Tambahkan handler untuk click pada container
-  const handleContainerClick = (e: React.MouseEvent) => {
-    // Pastikan klik terjadi langsung pada container, bukan pada anak-anaknya
-    if (e.target === e.currentTarget) {
-      console.log("Clicked on container, clearing selection");
-      clearSelection();
-    }
-  };
-
-  // Custom handler untuk shape selection dengan shift support
-
-  // Gunakan nilai stageSize dari context
-  const stageWidth = stageSize.width || window.innerWidth;
-  const stageHeight = stageSize.height || window.innerHeight;
 
   return (
     <div
@@ -161,30 +111,34 @@ const DiagramCanvas: React.FC = () => {
       className="w-full h-full bg-gray-50 overflow-hidden"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
-      onClick={handleContainerClick} // Tambahkan handler untuk container click
     >
       <Stage
-        ref={stageRef}
-        width={stageWidth}
-        height={stageHeight}
+        ref={stageRef} // Connect the ref to the Stage component
+        width={containerRef.current?.clientWidth || window.innerWidth}
+        height={containerRef.current?.clientHeight || window.innerHeight}
         scaleX={zoomLevel}
         scaleY={zoomLevel}
         onClick={handleStageClick}
       >
         <Layer>
-          <GridBackground width={5000} height={5000} spacing={20} />
+          <GridBackground
+            width={5000}
+            height={5000}
+            spacing={20}
+          />
         </Layer>
+
         <Layer>
           {connections.map((connection) => (
             <Connection key={connection.id} connection={connection} />
           ))}
+
           {shapes.map((shape) => (
             <DiagramShape
               key={shape.id}
               shape={shape}
-              isSelected={selectedIds.includes(shape.id)}
+              isSelected={shape.id === selectedId}
               onSelect={() => setSelectedId(shape.id)}
-              onShiftSelect={() => toggleShapeSelection(shape.id)}
               onChange={(newAttrs) => updateShapePosition(shape.id, newAttrs)}
             />
           ))}

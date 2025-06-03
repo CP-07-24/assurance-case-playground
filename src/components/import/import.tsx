@@ -1,6 +1,6 @@
-import React, { useState, useRef } from "react";
-import { X, FileJson, Code, Upload } from "lucide-react";
-import { useDiagramContext } from "../../store/DiagramContext";
+import React, { useState, useRef } from 'react';
+import { X, FileJson, Code, Upload } from 'lucide-react';
+import { useDiagramContext } from '../../context/DiagramContext';
 
 interface ImportModalProps {
   isOpen: boolean;
@@ -11,7 +11,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  
   const { importDiagram } = useDiagramContext();
 
   if (!isOpen) return null;
@@ -19,10 +19,10 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
-    if (e.type === "dragenter" || e.type === "dragover") {
+    
+    if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true);
-    } else if (e.type === "dragleave") {
+    } else if (e.type === 'dragleave') {
       setDragActive(false);
     }
   };
@@ -31,7 +31,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-
+    
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       handleFiles(e.dataTransfer.files);
     }
@@ -39,7 +39,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
-
+    
     if (e.target.files && e.target.files.length > 0) {
       handleFiles(e.target.files);
     }
@@ -48,23 +48,23 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
   const handleFiles = (files: FileList) => {
     setError(null);
     const file = files[0];
-
+    
     if (!file) return;
-
+    
     const fileName = file.name.toLowerCase();
-
-    if (fileName.endsWith(".json")) {
-      readFile(file, "json");
-    } else if (fileName.endsWith(".xml")) {
-      readFile(file, "xml");
+    
+    if (fileName.endsWith('.json')) {
+      readFile(file, 'json');
+    } else if (fileName.endsWith('.xml')) {
+      readFile(file, 'xml');
     } else {
-      setError("Unsupported file format. Please upload a JSON or XML file.");
+      setError('Unsupported file format. Please upload a JSON or XML file.');
     }
   };
 
-  const readFile = (file: File, format: "json" | "xml") => {
+  const readFile = (file: File, format: 'json' | 'xml') => {
     const reader = new FileReader();
-
+    
     reader.onload = (e) => {
       try {
         const content = e.target?.result as string;
@@ -74,17 +74,17 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
         setError(`Error parsing ${format.toUpperCase()} file: ${err}`);
       }
     };
-
+    
     reader.onerror = () => {
       setError(`Error reading ${format.toUpperCase()} file`);
     };
-
+    
     reader.readAsText(file);
   };
 
-  const handleButtonClick = (format: "json" | "xml") => {
+  const handleButtonClick = (format: 'json' | 'xml') => {
     if (fileInputRef.current) {
-      fileInputRef.current.setAttribute("accept", `.${format}`);
+      fileInputRef.current.setAttribute('accept', `.${format}`);
       fileInputRef.current.click();
     }
   };
@@ -101,11 +101,11 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
             <X size={20} />
           </button>
         </div>
-
+        
         <div className="p-4">
-          <div
+          <div 
             className={`border-2 border-dashed rounded-lg p-8 mb-4 text-center ${
-              dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
+              dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
             }`}
             onDragEnter={handleDrag}
             onDragOver={handleDrag}
@@ -123,28 +123,28 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
               onChange={handleChange}
             />
           </div>
-
+          
           {error && (
             <div className="mb-4 p-3 text-sm bg-red-50 text-red-600 rounded-md">
               {error}
             </div>
           )}
-
+          
           <p className="text-sm text-gray-600 mb-4">
             Select a file format to import:
           </p>
-
+          
           <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={() => handleButtonClick("json")}
+              onClick={() => handleButtonClick('json')}
               className="flex items-center justify-center p-3 border rounded-md hover:bg-gray-50 transition-colors"
             >
               <FileJson className="mr-2 text-blue-500" size={20} />
               <span>JSON</span>
             </button>
-
+            
             <button
-              onClick={() => handleButtonClick("xml")}
+              onClick={() => handleButtonClick('xml')}
               className="flex items-center justify-center p-3 border rounded-md hover:bg-gray-50 transition-colors"
             >
               <Code className="mr-2 text-purple-500" size={20} />

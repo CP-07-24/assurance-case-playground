@@ -1,24 +1,15 @@
-import React, { useState, useRef } from "react";
-import {
-  Sparkles,
-  Send,
-  X,
-  Workflow,
-  ListTree,
-  Wand2,
-  User,
-  Bot,
-} from "lucide-react";
-import { useDiagramContext } from "../../store/DiagramContext";
-import { gsnElements } from "../../data/shapeData";
+import React, { useState, useRef } from 'react';
+import { Sparkles, Send, X, Workflow, ListTree, Wand2, User, Bot } from 'lucide-react';
+import { useDiagramContext } from '../../context/DiagramContext';
+import { gsnElements } from '../../data/shapeData';
 
 // Simple message type
 interface Message {
   id: string;
   content: string;
-  sender: "user" | "ai";
+  sender: 'user' | 'ai';
   timestamp: Date;
-  type: "text" | "action";
+  type: 'text' | 'action';
 }
 
 const AiPanel: React.FC = () => {
@@ -26,17 +17,14 @@ const AiPanel: React.FC = () => {
 
   // Simple state for chat interface
   const [showChat, setShowChat] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      content:
-        "Hi! I can help you create diagrams. Try asking for a safety case, hazard analysis, or software safety diagram.",
-      sender: "ai",
-      timestamp: new Date(),
-      type: "text",
-    },
-  ]);
-  const [inputValue, setInputValue] = useState("");
+  const [messages, setMessages] = useState<Message[]>([{
+    id: '1',
+    content: "Hi! I can help you create diagrams. Try asking for a safety case, hazard analysis, or software safety diagram.",
+    sender: 'ai',
+    timestamp: new Date(),
+    type: 'text'
+  }]);
+  const [inputValue, setInputValue] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -60,14 +48,14 @@ const AiPanel: React.FC = () => {
       const userMessage: Message = {
         id: Date.now().toString(),
         content: inputValue,
-        sender: "user",
+        sender: 'user',
         timestamp: new Date(),
-        type: "text",
+        type: 'text'
       };
-      setMessages((prev) => [...prev, userMessage]);
+      setMessages(prev => [...prev, userMessage]);
 
       const userInput = inputValue;
-      setInputValue("");
+      setInputValue('');
       setIsGenerating(true);
 
       // Process after a short delay
@@ -77,22 +65,19 @@ const AiPanel: React.FC = () => {
 
         // Scroll to bottom
         if (messagesEndRef.current) {
-          messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
       }, 1000);
     } catch (error) {
       console.error("Error sending message:", error);
       setIsGenerating(false);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          content: "Sorry, there was an error processing your request.",
-          sender: "ai",
-          timestamp: new Date(),
-          type: "text",
-        },
-      ]);
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        content: "Sorry, there was an error processing your request.",
+        sender: 'ai',
+        timestamp: new Date(),
+        type: 'text'
+      }]);
     }
   };
 
@@ -102,29 +87,32 @@ const AiPanel: React.FC = () => {
     let aiResponse = "";
 
     // Determine which diagram to generate
-    if (lowerInput.includes("autonomous") || lowerInput.includes("vehicle")) {
+    if (lowerInput.includes('autonomous') || lowerInput.includes('vehicle')) {
       aiResponse = "I'll create an autonomous vehicle safety diagram for you.";
       generateAutonomousVehicleDiagram();
-    } else if (lowerInput.includes("hazard") || lowerInput.includes("risk")) {
+    }
+    else if (lowerInput.includes('hazard') || lowerInput.includes('risk')) {
       aiResponse = "Creating a hazard analysis diagram for you.";
       generateHazardDiagram();
-    } else if (lowerInput.includes("software")) {
+    }
+    else if (lowerInput.includes('software')) {
       aiResponse = "Generating a software safety assurance diagram now.";
       generateSoftwareDiagram();
-    } else {
+    }
+    else {
       aiResponse = "I'll create a basic safety case diagram for you.";
       generateBasicDiagram();
     }
 
     // Add AI response
     const botMessage: Message = {
-      id: Date.now().toString(),
-      content: aiResponse,
-      sender: "ai",
-      timestamp: new Date(),
-      type: "text",
-    };
-    setMessages((prev) => [...prev, botMessage]);
+        id: Date.now().toString(),
+        content: aiResponse,
+        sender: 'ai',
+        timestamp: new Date(),
+        type: 'text'
+      };
+      setMessages(prev => [...prev, botMessage]);
   };
 
   // Diagram generation functions
@@ -142,7 +130,7 @@ const AiPanel: React.FC = () => {
       width: 200,
       height: 80,
       value: "System is acceptably safe",
-      idText: "G1",
+      idText: "G1"
     });
 
     // Add subgoals
@@ -154,7 +142,7 @@ const AiPanel: React.FC = () => {
       width: 180,
       height: 70,
       value: "Hardware is safe",
-      idText: "G2",
+      idText: "G2"
     });
 
     addShape({
@@ -165,7 +153,7 @@ const AiPanel: React.FC = () => {
       width: 180,
       height: 70,
       value: "Software is safe",
-      idText: "G3",
+      idText: "G3"
     });
 
     // Add connections
@@ -174,14 +162,14 @@ const AiPanel: React.FC = () => {
         id: `conn-${Date.now()}-1`,
         from: id1,
         to: id2,
-        points: [],
+        points: []
       });
 
       addConnection({
         id: `conn-${Date.now()}-2`,
         from: id1,
         to: id3,
-        points: [],
+        points: []
       });
     }, 100);
   };
@@ -201,7 +189,7 @@ const AiPanel: React.FC = () => {
       width: 240,
       height: 80,
       value: "Autonomous vehicle is acceptably safe",
-      idText: "G1",
+      idText: "G1"
     });
 
     // Add strategy
@@ -214,7 +202,7 @@ const AiPanel: React.FC = () => {
       height: 70,
       value: "Argument by operational scenarios",
       idText: "S1",
-      cornerRadius: 5,
+      cornerRadius: 5
     });
 
     // Add subgoals
@@ -226,7 +214,7 @@ const AiPanel: React.FC = () => {
       width: 180,
       height: 70,
       value: "Perception system is reliable",
-      idText: "G2",
+      idText: "G2"
     });
 
     addShape({
@@ -237,7 +225,7 @@ const AiPanel: React.FC = () => {
       width: 180,
       height: 70,
       value: "Decision making is safe",
-      idText: "G3",
+      idText: "G3"
     });
 
     // Add connections
@@ -246,21 +234,21 @@ const AiPanel: React.FC = () => {
         id: `conn-${Date.now()}-1`,
         from: id1,
         to: id2,
-        points: [],
+        points: []
       });
 
       addConnection({
         id: `conn-${Date.now()}-2`,
         from: id2,
         to: id3,
-        points: [],
+        points: []
       });
 
       addConnection({
         id: `conn-${Date.now()}-3`,
         from: id2,
         to: id4,
-        points: [],
+        points: []
       });
     }, 100);
   };
@@ -280,7 +268,7 @@ const AiPanel: React.FC = () => {
       width: 200,
       height: 80,
       value: "All hazards are mitigated",
-      idText: "G1",
+      idText: "G1"
     });
 
     // Add strategy
@@ -293,7 +281,7 @@ const AiPanel: React.FC = () => {
       height: 70,
       value: "Argument by hazard analysis",
       idText: "S1",
-      cornerRadius: 5,
+      cornerRadius: 5
     });
 
     // Add subgoals
@@ -305,7 +293,7 @@ const AiPanel: React.FC = () => {
       width: 180,
       height: 70,
       value: "Hazard 1 is mitigated",
-      idText: "G2",
+      idText: "G2"
     });
 
     addShape({
@@ -316,7 +304,7 @@ const AiPanel: React.FC = () => {
       width: 180,
       height: 70,
       value: "Hazard 2 is mitigated",
-      idText: "G3",
+      idText: "G3"
     });
 
     // Add connections
@@ -325,21 +313,21 @@ const AiPanel: React.FC = () => {
         id: `conn-${Date.now()}-1`,
         from: id1,
         to: id2,
-        points: [],
+        points: []
       });
 
       addConnection({
         id: `conn-${Date.now()}-2`,
         from: id2,
         to: id3,
-        points: [],
+        points: []
       });
 
       addConnection({
         id: `conn-${Date.now()}-3`,
         from: id2,
         to: id4,
-        points: [],
+        points: []
       });
     }, 100);
   };
@@ -359,7 +347,7 @@ const AiPanel: React.FC = () => {
       width: 200,
       height: 80,
       value: "Software is acceptably safe",
-      idText: "G1",
+      idText: "G1"
     });
 
     // Add strategy
@@ -372,7 +360,7 @@ const AiPanel: React.FC = () => {
       height: 70,
       value: "Argument by verification & validation",
       idText: "S1",
-      cornerRadius: 5,
+      cornerRadius: 5
     });
 
     // Add subgoals
@@ -384,7 +372,7 @@ const AiPanel: React.FC = () => {
       width: 180,
       height: 70,
       value: "Requirements are correct",
-      idText: "G2",
+      idText: "G2"
     });
 
     addShape({
@@ -395,7 +383,7 @@ const AiPanel: React.FC = () => {
       width: 180,
       height: 70,
       value: "Implementation is correct",
-      idText: "G3",
+      idText: "G3"
     });
 
     // Add connections
@@ -404,21 +392,21 @@ const AiPanel: React.FC = () => {
         id: `conn-${Date.now()}-1`,
         from: id1,
         to: id2,
-        points: [],
+        points: []
       });
 
       addConnection({
         id: `conn-${Date.now()}-2`,
         from: id2,
         to: id3,
-        points: [],
+        points: []
       });
 
       addConnection({
         id: `conn-${Date.now()}-3`,
         from: id2,
         to: id4,
-        points: [],
+        points: []
       });
     }, 100);
   };
@@ -436,12 +424,9 @@ const AiPanel: React.FC = () => {
         <div className="bg-blue-50 rounded-full p-3 mb-4">
           <Sparkles size={24} className="text-blue-500" />
         </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
-          AI Diagram Assistant
-        </h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">AI Diagram Assistant</h3>
         <p className="text-sm text-gray-500 text-center mb-6">
-          Use AI to generate diagrams, analyze existing diagrams, or get
-          suggestions for improvements.
+          Use AI to generate diagrams, analyze existing diagrams, or get suggestions for improvements.
         </p>
         <button
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
@@ -454,7 +439,7 @@ const AiPanel: React.FC = () => {
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -490,28 +475,22 @@ const AiPanel: React.FC = () => {
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex ${
-                message.sender === "user" ? "justify-end" : "justify-start"
-              }`}
+              className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[80%] rounded-lg p-3 ${
-                  message.sender === "user"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-800"
-                }`}
+                className={`max-w-[80%] rounded-lg p-3 ${message.sender === 'user'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-800'
+                  }`}
               >
                 <div className="flex items-center gap-2 mb-1">
-                  {message.sender === "user" ? (
+                  {message.sender === 'user' ? (
                     <User size={14} className="opacity-70" />
                   ) : (
                     <Bot size={14} className="opacity-70" />
                   )}
                   <span className="text-xs opacity-70">
-                    {message.timestamp.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -526,14 +505,8 @@ const AiPanel: React.FC = () => {
                   <div>Generating...</div>
                   <div className="flex space-x-1">
                     <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                    <div
-                      className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.2s" }}
-                    ></div>
-                    <div
-                      className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.4s" }}
-                    ></div>
+                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                   </div>
                 </div>
               </div>
@@ -548,19 +521,19 @@ const AiPanel: React.FC = () => {
       <div className="p-4 border-t bg-gray-50">
         <div className="flex gap-2 mb-2 overflow-x-auto">
           <button
-            onClick={() => setInputValue("Generate a simple flowchart")}
+            onClick={() => setInputValue('Generate a simple flowchart')}
             className="flex items-center gap-1 px-3 py-1.5 text-xs bg-white border rounded-full"
           >
             <Workflow size={14} /> Flowchart
           </button>
           <button
-            onClick={() => setInputValue("Analyze my diagram")}
+            onClick={() => setInputValue('Analyze my diagram')}
             className="flex items-center gap-1 px-3 py-1.5 text-xs bg-white border rounded-full"
           >
             <ListTree size={14} /> Analyze
           </button>
           <button
-            onClick={() => setInputValue("Optimize the layout")}
+            onClick={() => setInputValue('Optimize the layout')}
             className="flex items-center gap-1 px-3 py-1.5 text-xs bg-white border rounded-full"
           >
             <Wand2 size={14} /> Optimize
@@ -580,11 +553,10 @@ const AiPanel: React.FC = () => {
           <button
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isGenerating}
-            className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-full ${
-              inputValue.trim() && !isGenerating
-                ? "text-blue-500 hover:bg-blue-50"
-                : "text-gray-400"
-            }`}
+            className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-full ${inputValue.trim() && !isGenerating
+              ? 'text-blue-500 hover:bg-blue-50'
+              : 'text-gray-400'
+              }`}
           >
             <Send size={18} />
           </button>
