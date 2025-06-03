@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
 
-test('Simulasi 100 user dan hitung statistik response time export PDF', async ({ page }) => {
+test('Simulasi user dan hitung statistik response time export PDF', async ({ page }) => {
   const totalUsers = 1;
   const responseTimes: number[] = [];
   let failedRequests = 0;
 
   for (let i = 0; i < totalUsers; i++) {
     try {
-      await page.goto('https://assurance-case-playground.vercel.app/');
+      await page.goto('http://localhost:5173');
 
       await page.click('[data-testid="open-export-modal-button"]');
       await page.waitForSelector('[data-testid="export-pdf"]', { timeout: 10000 });

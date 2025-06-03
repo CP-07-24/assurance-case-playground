@@ -72,6 +72,8 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => {
                 onClick={() => handleExport(format)}
                 disabled={exporting}
                 data-testid={testId}
+                id={`export-btn-${format}`} // Tambahan: ID unik untuk setiap tombol
+                title={`Export as ${label}`} // Tambahan: tooltip untuk mouseover
                 className={`flex items-center justify-center p-3 border rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 <Icon className={`mr-2 ${color}`} size={20} />
