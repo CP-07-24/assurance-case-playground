@@ -1,5 +1,38 @@
-import React, { createContext, useContext, useReducer, useState } from "react";
+import React, { createContext, useContext, useReducer, useState, useRef } from "react";
 import { ShapeOnCanvas, Connection } from "../types/shapes";
+
+// Try importing both ways to see which works
+let exportDiagramUtil: any;
+let importDiagramUtil: any;
+
+try {
+  // Method 1: Try named imports
+  const exportModule = require('../components/export/exportutils');
+  const importModule = require('../components/import/importutils');
+  
+  exportDiagramUtil = exportModule.exportDiagram || exportModule.default;
+  importDiagramUtil = importModule.importDiagram || importModule.default;
+  
+  console.log('Method 1 - Export function:', typeof exportDiagramUtil);
+  console.log('Method 1 - Import function:', typeof importDiagramUtil);
+} catch (error) {
+  console.error('Method 1 failed:', error);
+  
+  try {
+    // Method 2: Dynamic imports as fallback
+    import('../components/export/exportutils').then(module => {
+      exportDiagramUtil = module.exportDiagram || module.default;
+      console.log('Method 2 - Export function loaded:', typeof exportDiagramUtil);
+    });
+    
+    import('../components/import/importutils').then(module => {
+      importDiagramUtil = module.importDiagram || module.default;
+      console.log('Method 2 - Import function loaded:', typeof importDiagramUtil);
+    });
+  } catch (error2) {
+    console.error('Method 2 also failed:', error2);
+  }
+}
 
 // Tambahkan interface TextElementProps
 export interface TextElementProps {
@@ -71,6 +104,9 @@ interface DiagramContextType extends DiagramState {
   duplicateSelectedShapes: () => void;
   addTextElement: (textElement: TextElementProps) => void;
   setEditingShape: (id: string | null) => void;
+  exportDiagram: (format: string) => Promise<void>;
+  importDiagram: (content: string, format: 'json' | 'xml') => void;
+  stageRef: React.RefObject<any>;
 }
 
 const initialState: DiagramState = {
@@ -124,7 +160,8 @@ type DiagramAction =
   | { type: "TOGGLE_SHAPE_SELECTION"; payload: string }
   | { type: "SET_MULTIPLE_SELECTION"; payload: string[] }
   | { type: "SET_EDITING_SHAPE"; payload: string | null }
-  | { type: "SET_CONNECTING_FROM_POINT"; payload: string | null };
+  | { type: "SET_CONNECTING_FROM_POINT"; payload: string | null }
+  | { type: "SET_DIAGRAM"; payload: { shapes: ShapeOnCanvas[]; connections: Connection[] } };
 
 const diagramReducer = (
   state: DiagramState,
@@ -181,7 +218,6 @@ const diagramReducer = (
       };
     }
     case "DELETE_SHAPE": {
-      // Don't delete shape if it's currently being edited
       if (state.editingShapeId === action.payload) {
         return state;
       }
@@ -206,7 +242,6 @@ const diagramReducer = (
       };
     }
     case "DELETE_SHAPES": {
-      // Filter out shapes that are being edited
       const idsToDelete = action.payload.filter(
         (id) => id !== state.editingShapeId
       );
@@ -258,14 +293,12 @@ const diagramReducer = (
       };
     }
     case "ADD_CONNECTION": {
-      // Check if a connection already exists between these shapes in either direction
       const connectionExists = state.connections.some(
         (conn) =>
           (conn.from === action.payload.from &&
             conn.to === action.payload.to) ||
           (conn.from === action.payload.to && conn.to === action.payload.from)
       );
-      // If a connection already exists, return the current state without changes
       if (connectionExists) {
         return state;
       }
@@ -382,7 +415,6 @@ const diagramReducer = (
       };
     }
     case "SET_MULTIPLE_SELECTION": {
-      // Pastikan payload adalah array yang valid
       if (!Array.isArray(action.payload)) {
         console.error(
           "SET_MULTIPLE_SELECTION received invalid payload:",
@@ -390,14 +422,29 @@ const diagramReducer = (
         );
         return state;
       }
-
-      const newState = {
+      return {
         ...state,
-        selectedIds: [...action.payload], // Gunakan spread operator untuk array baru
+        selectedIds: [...action.payload],
         selectedId: action.payload.length === 1 ? action.payload[0] : null,
         selectedConnectionId: null,
       };
-      return newState;
+    }
+    case "SET_DIAGRAM": {
+      const { shapes, connections } = action.payload;
+      const newHistory = state.history.slice(0, state.historyIndex + 1);
+      newHistory.push({ shapes, connections });
+      return {
+        ...state,
+        shapes,
+        connections,
+        selectedId: null,
+        selectedIds: [],
+        selectedConnectionId: null,
+        history: newHistory,
+        historyIndex: state.historyIndex + 1,
+        canUndo: true,
+        canRedo: false,
+      };
     }
     case "UNDO": {
       if (state.historyIndex <= 0) return state;
@@ -467,6 +514,7 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [state, dispatch] = useReducer(diagramReducer, initialState);
   const [selectedShapeIds, setSelectedShapeIds] = useState<string[]>([]);
+  const stageRef = useRef<any>(null);
 
   const addShape = (shape: ShapeOnCanvas) => {
     dispatch({ type: "ADD_SHAPE", payload: shape });
@@ -498,7 +546,6 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const deleteShape = (id: string) => {
-    // Only delete if not currently editing
     if (state.editingShapeId !== id) {
       dispatch({ type: "DELETE_SHAPE", payload: id });
     } else {
@@ -507,9 +554,7 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const deleteSelectedShapes = () => {
-    // Don't delete any shapes that are being edited
     if (state.selectedIds.length > 0) {
-      // Filter out the editing shape if it's in the selection
       const shapesToDelete = state.selectedIds.filter(
         (id) => id !== state.editingShapeId
       );
@@ -539,7 +584,6 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const completeConnection = (toId: string, toPoint: string = "left") => {
     if (state.connectingFromId && state.connectingFromId !== toId) {
-      // Create connection object with fromPoint and toPoint
       const connection: ConnectionWithPoints = {
         id: `conn-${Date.now()}`,
         from: state.connectingFromId,
@@ -553,7 +597,6 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
       dispatch({ type: "ADD_CONNECTION", payload: connection });
     }
 
-    // Reset connection state
     dispatch({ type: "COMPLETE_CONNECTION" });
   };
 
@@ -600,14 +643,9 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // src/store/DiagramContext.tsx
   const selectAllShapes = () => {
     const allShapeIds = state.shapes.map((shape) => shape.id);
-
-    // Update state terpisah
     setSelectedShapeIds(allShapeIds);
-
-    // Juga dispatch untuk konsistensi state
     dispatch({
       type: "SET_MULTIPLE_SELECTION",
       payload: allShapeIds,
@@ -674,23 +712,81 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     dispatch({ type: "TOGGLE_SIDEBAR" });
   };
 
-  // Tambahkan fungsi addTextElement yang sudah diperbaiki
+  // Export diagram function with better error handling
+  const exportDiagram = async (format: string): Promise<void> => {
+    try {
+      console.log('ExportDiagram called with format:', format);
+      console.log('ExportDiagramUtil function:', exportDiagramUtil);
+      console.log('StageRef:', stageRef);
+      
+      const diagramData = {
+        shapes: state.shapes,
+        connections: state.connections
+      };
+      
+      console.log('Diagram data:', diagramData);
+      
+      if (!exportDiagramUtil) {
+        try {
+          const module = await import('../components/export/exportutils');
+          exportDiagramUtil = module.exportDiagram || module.default;
+          console.log('Dynamically loaded export function:', typeof exportDiagramUtil);
+        } catch (error) {
+          console.error('Failed to load export function:', error);
+          throw new Error('Export function is not available. Please check if the export utilities are properly installed.');
+        }
+      }
+      
+      if (typeof exportDiagramUtil !== 'function') {
+        throw new Error(`Export function is not a function. Type: ${typeof exportDiagramUtil}`);
+      }
+      
+      await exportDiagramUtil(format, stageRef, diagramData);
+    } catch (error) {
+      console.error('Error in exportDiagram:', error);
+      throw error;
+    }
+  };
+
+  // Import diagram function with better error handling
+  const importDiagram = (content: string, format: 'json' | 'xml'): void => {
+    try {
+      console.log('ImportDiagram called with format:', format);
+      console.log('ImportDiagramUtil function:', importDiagramUtil);
+      
+      if (!importDiagramUtil) {
+        throw new Error('Import function is not available. Please check if the import utilities are properly installed.');
+      }
+      
+      if (typeof importDiagramUtil !== 'function') {
+        throw new Error(`Import function is not a function. Type: ${typeof importDiagramUtil}`);
+      }
+      
+      const importedData = importDiagramUtil(content, format);
+      dispatch({ 
+        type: "SET_DIAGRAM", 
+        payload: importedData 
+      });
+    } catch (error) {
+      console.error('Error importing diagram:', error);
+      throw error;
+    }
+  };
+
   const addTextElement = (textElement: TextElementProps) => {
     console.log("addTextElement called with:", textElement);
 
     try {
-      // Buat shape baru untuk teks sesuai dengan tipe ShapeOnCanvas
       const textShape: ShapeOnCanvas = {
         id: `text-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         type: "text",
-        title: "Text", // Properti wajib dari Shape
-        preview: <div>Text</div>, // Properti wajib dari Shape
+        title: "Text",
+        preview: <div>Text</div>,
         x: textElement.x,
         y: textElement.y,
         width: textElement.width,
         height: textElement.height,
         text: textElement.text,
-        // Default styling untuk text
         fontFamily: "Arial",
         fontSize: 14,
         fontWeight: "normal",
@@ -702,13 +798,10 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
 
       console.log("Created text shape:", textShape);
 
-      // Tambahkan shape ke diagram
       dispatch({ type: "ADD_SHAPE", payload: textShape });
 
-      // Jika editable, set shape ini sebagai selected
       if (textElement.editable) {
         dispatch({ type: "SET_SELECTED", payload: textShape.id });
-
         setEditingShape(textShape.id);
       }
     } catch (error) {
@@ -747,6 +840,9 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     toggleSidebar,
     addTextElement,
     setEditingShape,
+    exportDiagram,
+    importDiagram,
+    stageRef,
     selectedIds:
       selectedShapeIds.length > 0 ? selectedShapeIds : state.selectedIds,
   };

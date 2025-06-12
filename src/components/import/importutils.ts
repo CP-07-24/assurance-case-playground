@@ -64,7 +64,8 @@ export const parseJSONDiagram = (content: string): DiagramData => {
         id: connection.id,
         from: connection.from,
         to: connection.to,
-        points: Array.isArray(connection.points) ? connection.points : []
+        points: Array.isArray(connection.points) ? connection.points : [],
+        style: connection.style || 'line' // Add default style
       } as Connection;
     });
     
@@ -130,7 +131,8 @@ export const parseXMLDiagram = (content: string): DiagramData => {
         id: getElementValue(element, 'id') || generateId(),
         from: getElementValue(element, 'from') || '',
         to: getElementValue(element, 'to') || '',
-        points: []
+        points: [],
+        style: getElementValue(element, 'style') as Connection['style'] || 'line' // Add style with default
       };
       
       // Parse points
@@ -167,8 +169,10 @@ function generateId(): string {
   return `id-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 }
 
-// Main import function
+// Main import function - PROPERLY EXPORTED AS NAMED EXPORT
 export const importDiagram = (content: string, format: 'json' | 'xml'): DiagramData => {
+  console.log(`Starting import in ${format} format`);
+  
   if (format === 'json') {
     return parseJSONDiagram(content);
   } else if (format === 'xml') {
@@ -177,3 +181,6 @@ export const importDiagram = (content: string, format: 'json' | 'xml'): DiagramD
     throw new Error(`Unsupported import format: ${format}`);
   }
 };
+
+// Also export as default for compatibility
+export default importDiagram;
