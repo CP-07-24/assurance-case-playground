@@ -8,7 +8,7 @@ import Connection from "./Connection";
 import { KonvaEventObject } from "konva/lib/Node";
 
 const DiagramCanvas: React.FC = () => {
-  const stageRef = useRef<any>(null);
+  // Remove the local stageRef, use the one from context instead
   const containerRef = useRef<HTMLDivElement>(null);
   // Gunakan ref untuk menyimpan dimensi, hindari useState karena menyebabkan re-render
   const dimensionsRef = useRef({
@@ -30,6 +30,7 @@ const DiagramCanvas: React.FC = () => {
     stageSize, // Gunakan nilai dari context langsung
     clearSelection, // Tambahkan clearSelection untuk membersihkan seleksi
     toggleShapeSelection, // Tambahkan untuk shift+click selection
+    stageRef, // ← ADD THIS: Get stageRef from context
   } = useDiagramContext();
 
   // Effect khusus untuk resize listener
@@ -117,7 +118,7 @@ const DiagramCanvas: React.FC = () => {
     const shapeData = e.dataTransfer.getData("shape");
     if (!shapeData) return;
     const shape = JSON.parse(shapeData);
-    const stageContainer = stageRef.current?.container();
+    const stageContainer = stageRef.current?.container(); // ← Use context stageRef
     if (!stageContainer) return;
     const stagePos = stageContainer.getBoundingClientRect();
     const x = (e.clientX - stagePos.left) / zoomLevel;
@@ -164,7 +165,7 @@ const DiagramCanvas: React.FC = () => {
       onClick={handleContainerClick} // Tambahkan handler untuk container click
     >
       <Stage
-        ref={stageRef}
+        ref={stageRef} // ← Use context stageRef instead of local one
         width={stageWidth}
         height={stageHeight}
         scaleX={zoomLevel}
