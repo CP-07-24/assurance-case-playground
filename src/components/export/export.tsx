@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { X, FileText, Image, Code, FileJson } from 'lucide-react';
-import { useDiagramContext } from '../../context/DiagramContext';
+import { useDiagramContext } from '../../store/DiagramContext';
 
 
 interface ExportModalProps {

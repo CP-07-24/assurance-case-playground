@@ -5,12 +5,13 @@ import {
   User,
   Bot,
   Wand2,
-  Workflow,
   ListTree,
+  X,
 } from "lucide-react";
 import { useDiagramContext } from "../../store/DiagramContext";
 import { getAIResponse } from "../../services/aiService";
 import { ShapeOnCanvas } from "../../types/shapes";
+import { useAuth } from '../../context/AuthContext';
 
 type Message = {
   id: string;
@@ -21,6 +22,7 @@ type Message = {
 };
 
 const AiPanel: React.FC = () => {
+  const { logout } = useAuth();
   const {
     shapes,
     connections,
@@ -51,9 +53,8 @@ const AiPanel: React.FC = () => {
       .slice(0, 3)
       .map((s) => s.text)
       .join(", ");
-    return `Diagram with ${shapes.length} elements (${mainElements}${
-      shapes.length > 3 ? "..." : ""
-    }) and ${connections.length} connections.`;
+    return `Diagram with ${shapes.length} elements (${mainElements}${shapes.length > 3 ? "..." : ""
+      }) and ${connections.length} connections.`;
   };
 
   const handleSpecialCommand = async (input: string): Promise<string> => {
@@ -64,11 +65,9 @@ const AiPanel: React.FC = () => {
     }
 
     if (lowerInput.includes("analyze") || lowerInput.includes("review")) {
-      return `Diagram Analysis:\n\n• Elements: ${
-        shapes.length
-      }\n• Connections: ${connections.length}\n• Complexity: ${
-        connections.length > 5 ? "High" : "Medium"
-      }\n\nNeed optimization suggestions?`;
+      return `Diagram Analysis:\n\n• Elements: ${shapes.length
+        }\n• Connections: ${connections.length}\n• Complexity: ${connections.length > 5 ? "High" : "Medium"
+        }\n\nNeed optimization suggestions?`;
     }
 
     return await getAIResponse(input, getDiagramContext());
@@ -152,7 +151,10 @@ const AiPanel: React.FC = () => {
     ];
 
     newShapes.forEach((shape) => addShape(shape));
-    addConnection({ id: "conn1", from: "start", to: "process", points: [] });
+    addConnection({
+      id: "conn1", from: "start", to: "process", points: [],
+      style: "line"
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -165,16 +167,25 @@ const AiPanel: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Header */}
-      <div className="p-4 border-b flex items-center space-x-3">
-        <div className="bg-blue-50 rounded-full p-2">
-          <Sparkles size={20} className="text-blue-500" />
+      <div className="p-4 border-b flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="bg-blue-50 rounded-full p-2">
+            <Sparkles size={20} className="text-blue-500" />
+          </div>
+          <div>
+            <h3 className="font-medium">AI Diagram Assistant</h3>
+            <p className="text-xs text-gray-500">
+              {shapes.length} elements • {connections.length} connections
+            </p>
+          </div>
         </div>
-        <div>
-          <h3 className="font-medium">AI Diagram Assistant</h3>
-          <p className="text-xs text-gray-500">
-            {shapes.length} elements • {connections.length} connections
-          </p>
-        </div>
+        <button
+          onClick={() => logout()}
+          className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+          title="Logout"
+        >
+          <X size={18} />
+        </button>
       </div>
 
       {/* Chat Container */}
@@ -182,16 +193,14 @@ const AiPanel: React.FC = () => {
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`flex ${
-              message.sender === "user" ? "justify-end" : "justify-start"
-            }`}
+            className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"
+              }`}
           >
             <div
-              className={`max-w-[80%] rounded-lg p-3 ${
-                message.sender === "user"
+              className={`max-w-[80%] rounded-lg p-3 ${message.sender === "user"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 text-gray-800"
-              }`}
+                }`}
             >
               <div className="flex items-center gap-2 mb-1">
                 {message.sender === "user" ? (
@@ -234,12 +243,12 @@ const AiPanel: React.FC = () => {
       {/* Input Area */}
       <div className="p-4 border-t bg-gray-50">
         <div className="flex gap-2 mb-2 overflow-x-auto">
-          <button
+          {/* <button
             onClick={() => setInputValue("Generate a simple flowchart")}
             className="flex items-center gap-1 px-3 py-1.5 text-xs bg-white border rounded-full"
           >
-            <Workflow size={14} /> Flowchart
-          </button>
+            <Workflow size={14} /> Generate
+          </button> */}
           <button
             onClick={() => setInputValue("Analyze my diagram")}
             className="flex items-center gap-1 px-3 py-1.5 text-xs bg-white border rounded-full"
@@ -267,11 +276,10 @@ const AiPanel: React.FC = () => {
           <button
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isProcessing}
-            className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-full ${
-              inputValue.trim() && !isProcessing
+            className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-full ${inputValue.trim() && !isProcessing
                 ? "text-blue-500 hover:bg-blue-50"
                 : "text-gray-400"
-            }`}
+              }`}
           >
             <Send size={18} />
           </button>

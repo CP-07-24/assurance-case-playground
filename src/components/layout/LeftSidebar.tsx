@@ -8,6 +8,8 @@ import {
   sacmElements,
   sacmExtensionElements,
 } from "../../data/shapeData";
+import LoginPanel from "../ai/LoginPanel";
+import { useAuth } from "../../context/AuthContext";
 
 interface LeftSidebarProps {
   activeTab: "shapes" | "ai";
@@ -15,13 +17,15 @@ interface LeftSidebarProps {
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({ activeTab }) => {
   const [searchText, setSearchText] = useState("");
+  const { isAuthenticated } = useAuth();
+  
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchText(e.target.value);
   };
 
   if (activeTab === "ai") {
-    return <AiPanel />;
+    return isAuthenticated ? <AiPanel /> : <LoginPanel onSuccess={() => {}} />;
   }
 
   return (

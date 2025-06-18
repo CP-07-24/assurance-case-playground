@@ -3,6 +3,8 @@ import MainLayout from "./components/layout/MainLayout";
 import LandingPage from "./components/templates/LandingPage";
 import TemplateSelection from "./components/templates/TemplateSelection";
 import { DiagramProvider, useDiagramContext } from "./store/DiagramContext";
+import { AuthProvider } from './context/AuthContext';
+
 
 function App() {
   const [view, setView] = useState<"landing" | "template-selection" | "editor">(
@@ -40,9 +42,12 @@ function App() {
   }
 
   return (
-    <DiagramProvider>
-      <MainLayout />
-    </DiagramProvider>
+    <AuthProvider>
+      <DiagramProvider>
+        <MainLayout />
+      </DiagramProvider>
+    </AuthProvider>
+
   );
 }
 
