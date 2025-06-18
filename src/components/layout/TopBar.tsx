@@ -1,13 +1,7 @@
 "use client"; // Wajib karena menggunakan hooks dan interaktivitas
+
 import React, { useState, useEffect } from "react";
-import {
-  Menu,
-  Type,
-  FolderKanban,
-  Edit,
-  HelpCircle,
-  Lightbulb,
-} from "lucide-react";
+import { Edit, HelpCircle, Lightbulb, FolderKanban } from "lucide-react";
 import { useDiagramContext } from "../../store/DiagramContext";
 import MenuDropdown from "../ui/MenuDropdown";
 import { FcGoogle } from "react-icons/fc";
@@ -17,6 +11,7 @@ import {
   auth,
 } from "../../lib/firebase/auth";
 import { User } from "firebase/auth";
+import Logo from "../../assets/logoeditor.png";
 
 const TopBar: React.FC = () => {
   const {
@@ -45,9 +40,18 @@ const TopBar: React.FC = () => {
       setUser(user);
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
+
+  // Fungsi untuk membuka project baru di tab baru
+  const openNewProject = () => {
+    // Mendapatkan URL saat ini
+    const currentUrl = window.location.href;
+    // Mendapatkan URL dasar (tanpa parameter query jika ada)
+    const baseUrl = currentUrl.split("?")[0];
+    // Buka URL dasar di tab baru
+    window.open(baseUrl, "_blank");
+  };
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -59,7 +63,6 @@ const TopBar: React.FC = () => {
       ) {
         return;
       }
-
       if (e.ctrlKey || e.metaKey) {
         switch (e.key.toLowerCase()) {
           case "z":
@@ -101,11 +104,18 @@ const TopBar: React.FC = () => {
             break;
         }
       }
-
       // Delete key for deleting selected shapes
       if (e.key === "Delete" || e.key === "Backspace") {
-        e.preventDefault();
-        deleteSelectedShapes();
+        // Hanya jika tidak ada input yang difokuskan
+        if (
+          !(
+            e.target instanceof HTMLInputElement ||
+            e.target instanceof HTMLTextAreaElement
+          )
+        ) {
+          e.preventDefault();
+          deleteSelectedShapes();
+        }
       }
     };
 
@@ -121,63 +131,10 @@ const TopBar: React.FC = () => {
     duplicateSelectedShapes,
   ]);
 
-  const typographyMenuItems = [
-    {
-      label: "Font Family",
-      onClick: () => console.log("Font Family"),
-      shortcut: "",
-    },
-    {
-      label: "Font Size",
-      onClick: () => console.log("Font Size"),
-      shortcut: "",
-    },
-    {
-      label: "Text Style",
-      onClick: () => console.log("Text Style"),
-      shortcut: "",
-    },
-  ];
-
   const projectMenuItems = [
     {
       label: "New Project",
-      onClick: () => {
-        // Implement new project functionality
-        console.log("New Project - implement this");
-      },
-      shortcut: "Ctrl+N",
-    },
-    {
-      label: "Open Project",
-      onClick: () => {
-        // Implement open project functionality
-        console.log("Open Project - implement this");
-      },
-      shortcut: "Ctrl+O",
-    },
-    {
-      label: "Save Project",
-      onClick: () => {
-        // Implement save project functionality
-        console.log("Save Project - implement this");
-      },
-      shortcut: "Ctrl+S",
-    },
-    {
-      label: "Import",
-      onClick: () => {
-        // Implement import functionality
-        console.log("Import - implement this");
-      },
-      shortcut: "",
-    },
-    {
-      label: "Export",
-      onClick: () => {
-        // Implement export functionality
-        console.log("Export - implement this");
-      },
+      onClick: openNewProject,
       shortcut: "",
     },
   ];
@@ -296,35 +253,20 @@ const TopBar: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center justify-between bg-white border-b border-gray-200 h-12 px-3">
+    <div
+      className="flex items-center justify-between bg-white border-b border-gray-200 h-12 px-3"
+      data-preserve-selection="true"
+    >
       <div className="flex items-center">
-        <button
-          className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100"
+        <div
+          className="flex items-center cursor-pointer"
           onClick={toggleSidebar}
         >
-          <Menu size={20} />
-        </button>
+          <img src={Logo} alt="Editor Logo" className="h-8 w-auto" />
+        </div>
 
-        <div className="flex ml-2">
-          {/* Typography Menu */}
-          <div className="relative">
-            <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "typography" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
-              onClick={() => handleMenuClick("typography")}
-            >
-              <div className="flex items-center">
-                <Type size={16} className="mr-1.5" />
-                Typography
-              </div>
-            </button>
-            {activeMenu === "typography" && (
-              <MenuDropdown items={typographyMenuItems} onClose={closeMenu} />
-            )}
-          </div>
-
-          {/* Project Menu */}
+        <div className="flex ml-6 space-x-1">
+          {/* PROJECT Menu */}
           <div className="relative">
             <button
               className={`px-3 py-1.5 text-sm font-medium ${
@@ -342,7 +284,7 @@ const TopBar: React.FC = () => {
             )}
           </div>
 
-          {/* Edit Menu */}
+          {/* EDIT Menu */}
           <div className="relative">
             <button
               className={`px-3 py-1.5 text-sm font-medium ${
@@ -360,7 +302,7 @@ const TopBar: React.FC = () => {
             )}
           </div>
 
-          {/* Help Menu */}
+          {/* DOCUMENTATION Menu */}
           <div className="relative">
             <button
               className={`px-3 py-1.5 text-sm font-medium ${
@@ -370,7 +312,7 @@ const TopBar: React.FC = () => {
             >
               <div className="flex items-center">
                 <HelpCircle size={16} className="mr-1.5" />
-                HELP
+                DOCUMENTATION
               </div>
             </button>
             {activeMenu === "help" && (
@@ -378,7 +320,7 @@ const TopBar: React.FC = () => {
             )}
           </div>
 
-          {/* Guidance Menu */}
+          {/* GUIDANCE Menu */}
           <div className="relative">
             <button
               className={`px-3 py-1.5 text-sm font-medium ${

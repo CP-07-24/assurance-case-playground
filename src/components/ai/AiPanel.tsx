@@ -152,7 +152,10 @@ const AiPanel: React.FC = () => {
     ];
 
     newShapes.forEach((shape) => addShape(shape));
-    addConnection({ id: "conn1", from: "start", to: "process", points: [] });
+    addConnection({
+      id: "conn1", from: "start", to: "process", points: [],
+      style: "line"
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

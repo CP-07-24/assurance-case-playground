@@ -1,6 +1,6 @@
 // src/services/aiService.ts
 export const getAIResponse = async (prompt: string, diagramContext: string) => {
-  const API_KEY = "sk-JLb9ot7WIQV2uGZed4Dhb0duvsxkOAxteoAPvrL5ooKfQTbS";
+  const API_KEY = "sk-iMvFMAyg1AJSCKpScqsMvbp6svIs0s1f5sn9wu7h6gze946k";
   const API_URL = "https://api.chatanywhere.org/v1/chat/completions";
 
   try {

@@ -15,7 +15,7 @@ export interface Connection {
   from: string;
   to: string;
   points: number[];
-  style: "line" | "arrow" | "doubleArrow" | "dashed" | "dotted";
+  style: "line" | "arrow" | "solidArrow" | "doubleArrow" | "dashed" | "dotted";
 }
 
 export interface ShapeOnCanvas extends Shape {

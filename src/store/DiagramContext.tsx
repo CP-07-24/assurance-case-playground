@@ -17,13 +17,20 @@ export interface ConnectionWithPoints extends Connection {
   toPoint?: string;
 }
 
+// Interface untuk clipboard yang menyimpan shapes dan connections
+interface ClipboardData {
+  shapes: ShapeOnCanvas[];
+  connections: Connection[];
+}
+
+// Perbaikan: DiagramState hanya berisi properti data, bukan fungsi
 interface DiagramState {
   shapes: ShapeOnCanvas[];
   connections: Connection[];
   selectedId: string | null;
   selectedConnectionId: string | null;
   selectedIds: string[];
-  clipboard: ShapeOnCanvas | null;
+  clipboard: ClipboardData | null; // Update clipboard untuk menyimpan shapes dan connections
   history: { shapes: ShapeOnCanvas[]; connections: Connection[] }[];
   historyIndex: number;
   canUndo: boolean;
@@ -35,11 +42,23 @@ interface DiagramState {
   connectingFromId: string | null;
   editingShapeId: string | null;
   connectingFromPoint: string | null;
+  // Properti untuk menggambar koneksi
+  isDrawingConnection: boolean;
+  connectionDrawingStyle: Connection["style"] | null;
+  connectionStartPoint: { x: number; y: number } | null;
 }
 
+// DiagramContextType menyediakan semua fungsi untuk berinteraksi dengan diagram
 interface DiagramContextType extends DiagramState {
   addShape: (shape: ShapeOnCanvas) => void;
   updateShapePosition: (id: string, newAttrs: Partial<ShapeOnCanvas>) => void;
+  updateShape: (
+    id: string,
+    x: number,
+    y: number,
+    width?: number,
+    height?: number
+  ) => void;
   setSelectedId: (id: string | null) => void;
   setSelectedConnection: (id: string | null) => void;
   updateSelectedShape: (attrs: Partial<ShapeOnCanvas>) => void;
@@ -59,7 +78,9 @@ interface DiagramContextType extends DiagramState {
   ) => void;
   deleteConnection: (id: string) => void;
   copyShape: (id?: string) => void;
+  copySelectedShapes: () => void;
   pasteShape: (offsetX?: number, offsetY?: number) => void;
+  cutSelectedShapes: () => void;
   selectAllShapes: () => void;
   clearSelection: () => void;
   toggleShapeSelection: (id: string) => void;
@@ -71,8 +92,20 @@ interface DiagramContextType extends DiagramState {
   duplicateSelectedShapes: () => void;
   addTextElement: (textElement: TextElementProps) => void;
   setEditingShape: (id: string | null) => void;
+  // Fungsi untuk drawing connection
+  startDrawingConnection: (style: Connection["style"]) => void;
+  completeDrawingConnection: (point: { x: number; y: number }) => void;
+  cancelDrawingConnection: () => void;
+  // Tambahkan fungsi untuk mengonversi endpoint koneksi
+  convertConnectionEndpoint: (
+    connectionId: string,
+    endpoint: "from" | "to",
+    shapeId: string,
+    point: string
+  ) => void;
 }
 
+// initialState hanya berisi properti data yang sesuai dengan DiagramState
 const initialState: DiagramState = {
   shapes: [],
   connections: [],
@@ -91,10 +124,14 @@ const initialState: DiagramState = {
   connectingFromId: null,
   editingShapeId: null,
   connectingFromPoint: null,
+  isDrawingConnection: false,
+  connectionDrawingStyle: null,
+  connectionStartPoint: null,
 };
 
 type DiagramAction =
   | { type: "ADD_SHAPE"; payload: ShapeOnCanvas }
+  | { type: "ADD_SHAPES"; payload: ShapeOnCanvas[] }
   | {
       type: "UPDATE_SHAPE";
       payload: { id: string; attrs: Partial<ShapeOnCanvas> };
@@ -114,17 +151,42 @@ type DiagramAction =
   | { type: "ADD_CONNECTION"; payload: Connection | ConnectionWithPoints }
   | {
       type: "UPDATE_CONNECTION";
-      payload: { id: string; points: number[]; style: Connection["style"] };
+      payload: {
+        id: string;
+        points: number[];
+        style: Connection["style"];
+        from?: string;
+        to?: string;
+        fromPoint?: string;
+        toPoint?: string;
+      };
     }
   | { type: "DELETE_CONNECTION"; payload: string }
   | { type: "COPY_SHAPE"; payload: string }
-  | { type: "PASTE_SHAPE"; payload: { offsetX: number; offsetY: number } }
+  | { type: "COPY_SHAPES"; payload: string[] }
+  | {
+      type: "PASTE_SHAPES_AND_CONNECTIONS";
+      payload: { offsetX: number; offsetY: number };
+    }
   | { type: "SELECT_ALL" }
   | { type: "CLEAR_SELECTION" }
   | { type: "TOGGLE_SHAPE_SELECTION"; payload: string }
   | { type: "SET_MULTIPLE_SELECTION"; payload: string[] }
   | { type: "SET_EDITING_SHAPE"; payload: string | null }
-  | { type: "SET_CONNECTING_FROM_POINT"; payload: string | null };
+  | { type: "SET_CONNECTING_FROM_POINT"; payload: string | null }
+  | { type: "START_DRAWING_CONNECTION"; payload: Connection["style"] }
+  | { type: "SET_CONNECTION_START_POINT"; payload: { x: number; y: number } }
+  | { type: "COMPLETE_DRAWING_CONNECTION" }
+  | { type: "CANCEL_DRAWING_CONNECTION" }
+  | {
+      type: "CONVERT_CONNECTION_ENDPOINT";
+      payload: {
+        connectionId: string;
+        endpoint: "from" | "to";
+        shapeId: string;
+        point: string;
+      };
+    };
 
 const diagramReducer = (
   state: DiagramState,
@@ -143,6 +205,48 @@ const diagramReducer = (
         canUndo: true,
         canRedo: false,
       };
+    }
+    case "ADD_SHAPES": {
+      // Untuk memperbarui beberapa shape sekaligus (drag selection)
+      if (
+        action.payload.every((shape) =>
+          state.shapes.some((s) => s.id === shape.id)
+        )
+      ) {
+        // Ini adalah pembaruan untuk shape yang sudah ada
+        const newShapes = state.shapes.map((shape) => {
+          const updatedShape = action.payload.find((s) => s.id === shape.id);
+          return updatedShape || shape;
+        });
+
+        const newHistory = state.history.slice(0, state.historyIndex + 1);
+        newHistory.push({ shapes: newShapes, connections: state.connections });
+
+        return {
+          ...state,
+          shapes: newShapes,
+          history: newHistory,
+          historyIndex: state.historyIndex + 1,
+          canUndo: true,
+          canRedo: false,
+        };
+      } else {
+        // Implementasi asli untuk menambahkan shape baru
+        const newShapes = [...state.shapes, ...action.payload];
+        const newHistory = state.history.slice(0, state.historyIndex + 1);
+        newHistory.push({ shapes: newShapes, connections: state.connections });
+
+        return {
+          ...state,
+          shapes: newShapes,
+          history: newHistory,
+          historyIndex: state.historyIndex + 1,
+          canUndo: true,
+          canRedo: false,
+          selectedIds: action.payload.map((shape) => shape.id),
+          selectedId: action.payload.length === 1 ? action.payload[0].id : null,
+        };
+      }
     }
     case "UPDATE_SHAPE": {
       const { id, attrs } = action.payload;
@@ -258,17 +362,34 @@ const diagramReducer = (
       };
     }
     case "ADD_CONNECTION": {
-      // Check if a connection already exists between these shapes in either direction
+      // Untuk koneksi mandiri, tambahkan tanpa pemeriksaan
+      if (!action.payload.from || !action.payload.to) {
+        const newConnections = [...state.connections, action.payload];
+        const newHistory = state.history.slice(0, state.historyIndex + 1);
+        newHistory.push({ shapes: state.shapes, connections: newConnections });
+        return {
+          ...state,
+          connections: newConnections,
+          history: newHistory,
+          historyIndex: state.historyIndex + 1,
+          canUndo: true,
+          canRedo: false,
+        };
+      }
+
+      // Untuk koneksi antar shape, periksa duplikat
       const connectionExists = state.connections.some(
         (conn) =>
           (conn.from === action.payload.from &&
             conn.to === action.payload.to) ||
           (conn.from === action.payload.to && conn.to === action.payload.from)
       );
+
       // If a connection already exists, return the current state without changes
       if (connectionExists) {
         return state;
       }
+
       const newConnections = [...state.connections, action.payload];
       const newHistory = state.history.slice(0, state.historyIndex + 1);
       newHistory.push({ shapes: state.shapes, connections: newConnections });
@@ -282,12 +403,57 @@ const diagramReducer = (
       };
     }
     case "UPDATE_CONNECTION": {
-      const { id, points, style } = action.payload;
+      const { id, points, style, from, to, fromPoint, toPoint } =
+        action.payload;
       const newConnections = state.connections.map((conn) =>
-        conn.id === id ? { ...conn, points, style } : conn
+        conn.id === id
+          ? {
+              ...conn,
+              points,
+              style,
+              ...(from !== undefined ? { from } : {}),
+              ...(to !== undefined ? { to } : {}),
+              ...(fromPoint !== undefined ? { fromPoint } : {}),
+              ...(toPoint !== undefined ? { toPoint } : {}),
+            }
+          : conn
       );
       const newHistory = state.history.slice(0, state.historyIndex + 1);
       newHistory.push({ shapes: state.shapes, connections: newConnections });
+      return {
+        ...state,
+        connections: newConnections,
+        history: newHistory,
+        historyIndex: state.historyIndex + 1,
+        canUndo: true,
+        canRedo: false,
+      };
+    }
+    case "CONVERT_CONNECTION_ENDPOINT": {
+      const { connectionId, endpoint, shapeId, point } = action.payload;
+      const connection = state.connections.find(
+        (conn) => conn.id === connectionId
+      );
+      if (!connection) return state;
+
+      const newConnections = state.connections.map((conn) => {
+        if (conn.id !== connectionId) return conn;
+
+        const updatedConn = { ...conn } as ConnectionWithPoints;
+        if (endpoint === "from") {
+          updatedConn.from = shapeId;
+          updatedConn.fromPoint = point;
+        } else {
+          updatedConn.to = shapeId;
+          updatedConn.toPoint = point;
+        }
+
+        return updatedConn;
+      });
+
+      const newHistory = state.history.slice(0, state.historyIndex + 1);
+      newHistory.push({ shapes: state.shapes, connections: newConnections });
+
       return {
         ...state,
         connections: newConnections,
@@ -317,30 +483,93 @@ const diagramReducer = (
       const shapeToCopy = state.shapes.find(
         (shape) => shape.id === action.payload
       );
+
+      // Get connections for this single shape
+      const connectionsToCopy = state.connections.filter(
+        (conn) => conn.from === action.payload || conn.to === action.payload
+      );
+
       return {
         ...state,
-        clipboard: shapeToCopy || null,
+        clipboard: shapeToCopy
+          ? {
+              shapes: [shapeToCopy],
+              connections: connectionsToCopy,
+            }
+          : null,
       };
     }
-    case "PASTE_SHAPE": {
-      if (!state.clipboard) return state;
-      const { offsetX, offsetY } = action.payload;
-      const newShape: ShapeOnCanvas = {
-        ...state.clipboard,
-        id: `${state.clipboard.type}-${Date.now()}-${Math.random()
-          .toString(36)
-          .substr(2, 9)}`,
-        x: state.clipboard.x + offsetX,
-        y: state.clipboard.y + offsetY,
-      };
-      const newShapes = [...state.shapes, newShape];
-      const newHistory = state.history.slice(0, state.historyIndex + 1);
-      newHistory.push({ shapes: newShapes, connections: state.connections });
+    case "COPY_SHAPES": {
+      const shapesToCopy = state.shapes.filter((shape) =>
+        action.payload.includes(shape.id)
+      );
+
+      // Get connections between the selected shapes
+      const connectionsToCopy = state.connections.filter(
+        (conn) =>
+          action.payload.includes(conn.from) && action.payload.includes(conn.to)
+      );
+
       return {
         ...state,
-        shapes: newShapes,
-        selectedId: newShape.id,
-        selectedIds: [newShape.id],
+        clipboard:
+          shapesToCopy.length > 0
+            ? {
+                shapes: shapesToCopy,
+                connections: connectionsToCopy,
+              }
+            : null,
+      };
+    }
+    case "PASTE_SHAPES_AND_CONNECTIONS": {
+      if (!state.clipboard || state.clipboard.shapes.length === 0) return state;
+
+      const { offsetX, offsetY } = action.payload;
+
+      // Calculate the bounding box of clipboard shapes to maintain relative positions
+      const minX = Math.min(...state.clipboard.shapes.map((shape) => shape.x));
+      const minY = Math.min(...state.clipboard.shapes.map((shape) => shape.y));
+
+      // Create mapping from old IDs to new IDs
+      const idMapping: { [oldId: string]: string } = {};
+
+      // Create new shapes with new IDs
+      const newShapes = state.clipboard.shapes.map((shape, index) => {
+        const newId = `${shape.type}-${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 9)}-${index}`;
+        idMapping[shape.id] = newId;
+
+        return {
+          ...shape,
+          id: newId,
+          x: shape.x - minX + offsetX,
+          y: shape.y - minY + offsetY,
+        };
+      });
+
+      // Create new connections with updated IDs
+      const newConnections = state.clipboard.connections.map((conn, index) => ({
+        ...conn,
+        id: `conn-${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 9)}-${index}`,
+        from: idMapping[conn.from] || conn.from,
+        to: idMapping[conn.to] || conn.to,
+      }));
+
+      const allShapes = [...state.shapes, ...newShapes];
+      const allConnections = [...state.connections, ...newConnections];
+
+      const newHistory = state.history.slice(0, state.historyIndex + 1);
+      newHistory.push({ shapes: allShapes, connections: allConnections });
+
+      return {
+        ...state,
+        shapes: allShapes,
+        connections: allConnections,
+        selectedIds: newShapes.map((shape) => shape.id),
+        selectedId: newShapes.length === 1 ? newShapes[0].id : null,
         history: newHistory,
         historyIndex: state.historyIndex + 1,
         canUndo: true,
@@ -390,7 +619,6 @@ const diagramReducer = (
         );
         return state;
       }
-
       const newState = {
         ...state,
         selectedIds: [...action.payload], // Gunakan spread operator untuk array baru
@@ -455,6 +683,32 @@ const diagramReducer = (
         connectingFromPoint: action.payload,
       };
     }
+    case "START_DRAWING_CONNECTION":
+      return {
+        ...state,
+        isDrawingConnection: true,
+        connectionDrawingStyle: action.payload,
+        connectionStartPoint: null,
+      };
+    case "SET_CONNECTION_START_POINT":
+      return {
+        ...state,
+        connectionStartPoint: action.payload,
+      };
+    case "COMPLETE_DRAWING_CONNECTION":
+      return {
+        ...state,
+        isDrawingConnection: false,
+        connectionDrawingStyle: null,
+        connectionStartPoint: null,
+      };
+    case "CANCEL_DRAWING_CONNECTION":
+      return {
+        ...state,
+        isDrawingConnection: false,
+        connectionDrawingStyle: null,
+        connectionStartPoint: null,
+      };
     default:
       return state;
   }
@@ -476,7 +730,76 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     id: string,
     newAttrs: Partial<ShapeOnCanvas>
   ) => {
-    dispatch({ type: "UPDATE_SHAPE", payload: { id, attrs: newAttrs } });
+    // Jika kita sedang men-drag shape yang merupakan bagian dari multi-selection
+    if (state.selectedIds.length > 1 && state.selectedIds.includes(id)) {
+      // Temukan shape yang sedang di-drag
+      const selectedShape = state.shapes.find((shape) => shape.id === id);
+      if (!selectedShape) return;
+
+      // Hitung perubahan posisi (delta)
+      const deltaX =
+        newAttrs.x !== undefined ? newAttrs.x - selectedShape.x : 0;
+      const deltaY =
+        newAttrs.y !== undefined ? newAttrs.y - selectedShape.y : 0;
+
+      // Terapkan delta yang sama ke semua shape yang dipilih
+      const updatedShapes = state.shapes.map((shape) => {
+        if (state.selectedIds.includes(shape.id)) {
+          return {
+            ...shape,
+            x: shape.x + deltaX,
+            y: shape.y + deltaY,
+            // Sertakan atribut lain jika diberikan
+            ...(newAttrs.width !== undefined ? { width: newAttrs.width } : {}),
+            ...(newAttrs.height !== undefined
+              ? { height: newAttrs.height }
+              : {}),
+            // Salin atribut lain dari newAttrs yang mungkin relevan
+            ...Object.keys(newAttrs)
+              .filter((key) => !["x", "y", "width", "height"].includes(key))
+              .reduce(
+                (obj, key) => ({
+                  ...obj,
+                  [key]: newAttrs[key as keyof typeof newAttrs],
+                }),
+                {}
+              ),
+          };
+        }
+        return shape;
+      });
+
+      // Perbarui semua shape yang dipilih sekaligus dengan satu tindakan
+      const newHistory = state.history.slice(0, state.historyIndex + 1);
+      newHistory.push({
+        shapes: updatedShapes,
+        connections: state.connections,
+      });
+
+      dispatch({
+        type: "ADD_SHAPES",
+        payload: updatedShapes.filter((shape) =>
+          state.selectedIds.includes(shape.id)
+        ),
+      });
+    } else {
+      // Jika hanya satu shape yang dipilih, gunakan implementasi asli
+      dispatch({ type: "UPDATE_SHAPE", payload: { id, attrs: newAttrs } });
+    }
+  };
+
+  // Tambahkan fungsi updateShape untuk Connection component
+  const updateShape = (
+    id: string,
+    x: number,
+    y: number,
+    width?: number,
+    height?: number
+  ) => {
+    const attrs: Partial<ShapeOnCanvas> = { x, y };
+    if (width !== undefined) attrs.width = width;
+    if (height !== undefined) attrs.height = height;
+    updateShapePosition(id, attrs);
   };
 
   const setSelectedId = (id: string | null) => {
@@ -574,10 +897,23 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     dispatch({ type: "UPDATE_CONNECTION", payload: { id, points, style } });
   };
 
+  const convertConnectionEndpoint = (
+    connectionId: string,
+    endpoint: "from" | "to",
+    shapeId: string,
+    point: string
+  ) => {
+    dispatch({
+      type: "CONVERT_CONNECTION_ENDPOINT",
+      payload: { connectionId, endpoint, shapeId, point },
+    });
+  };
+
   const deleteConnection = (id: string) => {
     dispatch({ type: "DELETE_CONNECTION", payload: id });
   };
 
+  // Copy single shape (backward compatibility)
   const copyShape = (id?: string) => {
     let shapeId: string | undefined;
     if (id) {
@@ -587,26 +923,66 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     } else if (state.selectedIds.length === 1) {
       shapeId = state.selectedIds[0];
     } else if (state.selectedIds.length > 1) {
-      shapeId = state.selectedIds[0];
+      // If multiple shapes selected, copy all of them
+      copySelectedShapes();
+      return;
     }
     if (shapeId) {
       dispatch({ type: "COPY_SHAPE", payload: shapeId });
     }
   };
 
+  // Copy all selected shapes and their connections
+  const copySelectedShapes = () => {
+    const shapesToCopy =
+      state.selectedIds.length > 0
+        ? state.selectedIds
+        : state.selectedId
+        ? [state.selectedId]
+        : [];
+
+    if (shapesToCopy.length > 0) {
+      dispatch({ type: "COPY_SHAPES", payload: shapesToCopy });
+    }
+  };
+
+  // Cut selected shapes and connections (copy + delete)
+  const cutSelectedShapes = () => {
+    const shapesToCut =
+      state.selectedIds.length > 0
+        ? state.selectedIds
+        : state.selectedId
+        ? [state.selectedId]
+        : [];
+
+    if (shapesToCut.length > 0) {
+      // First copy the shapes and their connections
+      dispatch({ type: "COPY_SHAPES", payload: shapesToCut });
+
+      // Then delete them (but not if any are being edited)
+      const shapesToDelete = shapesToCut.filter(
+        (id) => id !== state.editingShapeId
+      );
+      if (shapesToDelete.length > 0) {
+        dispatch({ type: "DELETE_SHAPES", payload: shapesToDelete });
+      }
+    }
+  };
+
   const pasteShape = (offsetX: number = 20, offsetY: number = 20) => {
-    if (state.clipboard) {
-      dispatch({ type: "PASTE_SHAPE", payload: { offsetX, offsetY } });
+    if (state.clipboard && state.clipboard.shapes.length > 0) {
+      dispatch({
+        type: "PASTE_SHAPES_AND_CONNECTIONS",
+        payload: { offsetX, offsetY },
+      });
     }
   };
 
   // src/store/DiagramContext.tsx
   const selectAllShapes = () => {
     const allShapeIds = state.shapes.map((shape) => shape.id);
-
     // Update state terpisah
     setSelectedShapeIds(allShapeIds);
-
     // Juga dispatch untuk konsistensi state
     dispatch({
       type: "SET_MULTIPLE_SELECTION",
@@ -624,24 +1000,20 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const duplicateSelectedShapes = () => {
-    if (state.selectedIds.length > 0) {
-      state.selectedIds.forEach((id) => {
-        const shape = state.shapes.find((s) => s.id === id);
-        if (shape) {
-          dispatch({ type: "COPY_SHAPE", payload: id });
-          dispatch({
-            type: "PASTE_SHAPE",
-            payload: {
-              offsetX: 20,
-              offsetY: 20,
-            },
-          });
-        }
-      });
-    } else if (state.selectedId) {
-      dispatch({ type: "COPY_SHAPE", payload: state.selectedId });
+    const shapesToDuplicate =
+      state.selectedIds.length > 0
+        ? state.selectedIds
+        : state.selectedId
+        ? [state.selectedId]
+        : [];
+
+    if (shapesToDuplicate.length > 0) {
+      // Copy the selected shapes and their connections
+      dispatch({ type: "COPY_SHAPES", payload: shapesToDuplicate });
+
+      // Immediately paste them with offset
       dispatch({
-        type: "PASTE_SHAPE",
+        type: "PASTE_SHAPES_AND_CONNECTIONS",
         payload: {
           offsetX: 20,
           offsetY: 20,
@@ -681,7 +1053,7 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       // Buat shape baru untuk teks sesuai dengan tipe ShapeOnCanvas
       const textShape: ShapeOnCanvas = {
-        id: `text-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `text-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         type: "text",
         title: "Text", // Properti wajib dari Shape
         preview: <div>Text</div>, // Properti wajib dari Shape
@@ -701,14 +1073,12 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
       };
 
       console.log("Created text shape:", textShape);
-
       // Tambahkan shape ke diagram
       dispatch({ type: "ADD_SHAPE", payload: textShape });
 
       // Jika editable, set shape ini sebagai selected
       if (textElement.editable) {
         dispatch({ type: "SET_SELECTED", payload: textShape.id });
-
         setEditingShape(textShape.id);
       }
     } catch (error) {
@@ -716,10 +1086,42 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  // Fungsi untuk drawing connection
+  const startDrawingConnection = (style: Connection["style"]) => {
+    dispatch({ type: "START_DRAWING_CONNECTION", payload: style });
+  };
+
+  const completeDrawingConnection = (endPoint: { x: number; y: number }) => {
+    if (state.connectionStartPoint) {
+      // Create a standalone connection between two points
+      const connection: Connection = {
+        id: `conn-${Date.now()}`,
+        points: [
+          state.connectionStartPoint.x,
+          state.connectionStartPoint.y,
+          endPoint.x,
+          endPoint.y,
+        ],
+        style: state.connectionDrawingStyle || "line",
+        // These properties would be empty string since it's not connecting shapes
+        from: "",
+        to: "",
+      };
+      dispatch({ type: "ADD_CONNECTION", payload: connection });
+    }
+    dispatch({ type: "COMPLETE_DRAWING_CONNECTION" });
+  };
+
+  const cancelDrawingConnection = () => {
+    dispatch({ type: "CANCEL_DRAWING_CONNECTION" });
+  };
+
+  // Perbaikan: Tambahkan convertConnectionEndpoint ke contextValue
   const contextValue: DiagramContextType = {
     ...state,
     addShape,
     updateShapePosition,
+    updateShape,
     setSelectedId,
     setSelectedConnection,
     updateSelectedShape,
@@ -735,7 +1137,9 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     updateConnection,
     deleteConnection,
     copyShape,
+    copySelectedShapes,
     pasteShape,
+    cutSelectedShapes,
     selectAllShapes,
     clearSelection,
     toggleShapeSelection,
@@ -747,6 +1151,10 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     toggleSidebar,
     addTextElement,
     setEditingShape,
+    startDrawingConnection,
+    completeDrawingConnection,
+    cancelDrawingConnection,
+    convertConnectionEndpoint,
     selectedIds:
       selectedShapeIds.length > 0 ? selectedShapeIds : state.selectedIds,
   };

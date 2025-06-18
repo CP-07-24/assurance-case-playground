@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import { Group, Transformer, Circle, Text } from "react-konva";
 import { useDiagramContext } from "../../store/DiagramContext";
 import { ShapeOnCanvas } from "../../types/shapes";
 import SVGImage from "./SvgImage";
 import { KonvaEventObject } from "konva/lib/Node";
+import Konva from "konva";
 
 interface DiagramShapeProps {
   shape: ShapeOnCanvas;
@@ -53,11 +54,21 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
   const shapeRef = React.useRef<any>(null);
   const textRef = React.useRef<any>(null);
 
+  // State untuk hover effect pada connector
+  const [hoveredConnector, setHoveredConnector] = useState<string | null>(null);
+
+  // Tambahkan initialPosition ref untuk tracking saat drag
+  const initialPositionRef = useRef({ x: shape.x, y: shape.y });
+
   const {
     completeConnection,
     isConnecting,
     connectingFromId,
+    connectingFromPoint,
     startConnectionFromPoint,
+    selectedIds,
+    updateShapePosition,
+    // startDrawingConnection,
   } = useDiagramContext();
 
   React.useEffect(() => {
@@ -67,39 +78,160 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
     }
   }, [isSelected]);
 
-  const handleLeftConnectorClick = (e: any) => {
-    e.cancelBubble = true;
-    if (isConnecting) {
-      completeConnection(shape.id, "left");
-    } else {
-      startConnectionFromPoint(shape.id, "left");
+  // Hitung ukuran connector berdasarkan ukuran shape
+  const getConnectorRadius = () => {
+    // Membuat ukuran konektor proporsional dengan ukuran shape tapi dengan batas maksimum
+    const baseDimension = Math.min(shape.width || 100, shape.height || 50);
+    return Math.min(5, Math.max(3, baseDimension * 0.05));
+  };
+
+  // Fungsi untuk mendapatkan ukuran font yang proporsional
+  const getProportionalFontSize = (baseFontSize: number) => {
+    // Membuat ukuran font proporsional tapi dengan batas maksimum dan minimum
+    const baseDimension = Math.min(shape.width || 100, shape.height || 50);
+    const scaleFactor = baseDimension / 100; // 100 adalah ukuran shape default
+    return Math.min(16, Math.max(9, baseFontSize * scaleFactor));
+  };
+
+  // Fungsi untuk mendapatkan semua shape yang dipilih
+  const getSelectedShapes = (): Konva.Node[] => {
+    const stage = shapeRef.current?.getStage();
+    if (!stage) return [];
+
+    const selectedShapes: Konva.Node[] = [];
+    selectedIds.forEach((id) => {
+      // Cari node dengan id yang sesuai
+      const node = stage.findOne(`#${id}`);
+      if (node) selectedShapes.push(node);
+    });
+
+    return selectedShapes;
+  };
+
+  // Tangani awal drag
+  const handleDragStart = () => {
+    // Simpan posisi awal untuk shape ini
+    initialPositionRef.current = { x: shape.x, y: shape.y };
+
+    // Jika multiple shapes dipilih, simpan posisi awal untuk semua shapes
+    if (selectedIds.length > 1 && isSelected) {
+      const selectedShapes = getSelectedShapes();
+      selectedShapes.forEach((shapeNode) => {
+        // Simpan posisi awal di node itu sendiri sebagai custom attribute
+        if (shapeNode.id() !== shape.id) {
+          shapeNode.setAttr("initialX", shapeNode.x());
+          shapeNode.setAttr("initialY", shapeNode.y());
+        }
+      });
     }
   };
 
-  const handleRightConnectorClick = (e: any) => {
-    e.cancelBubble = true;
-    if (isConnecting) {
-      completeConnection(shape.id, "right");
-    } else {
-      startConnectionFromPoint(shape.id, "right");
+  // Tangani selama drag
+  const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
+    // Hitung delta dari posisi awal
+    const deltaX = e.target.x() - initialPositionRef.current.x;
+    const deltaY = e.target.y() - initialPositionRef.current.y;
+
+    // Jika multiple shapes dipilih, perbarui posisi semua shapes
+    if (selectedIds.length > 1 && isSelected) {
+      const selectedShapes = getSelectedShapes();
+      selectedShapes.forEach((shapeNode) => {
+        // Jangan update shape yang sedang di-drag
+        if (shapeNode.id() !== shape.id) {
+          const initialX = shapeNode.getAttr("initialX");
+          const initialY = shapeNode.getAttr("initialY");
+
+          if (initialX !== undefined && initialY !== undefined) {
+            shapeNode.x(initialX + deltaX);
+            shapeNode.y(initialY + deltaY);
+          }
+        }
+      });
+    }
+
+    // Perbarui attrs untuk shape yang di-drag
+    onChange({
+      x: e.target.x(),
+      y: e.target.y(),
+    });
+  };
+
+  // Tangani akhir drag
+  const handleDragEnd = () => {
+    // Jika multiple shapes dipilih, komit perubahan ke semua shapes
+    if (selectedIds.length > 1 && isSelected) {
+      const selectedShapes = getSelectedShapes();
+      selectedShapes.forEach((shapeNode) => {
+        // Jangan update shape yang sedang di-drag (sudah diupdate oleh onChange di atas)
+        if (shapeNode.id() !== shape.id) {
+          // Ambil id dan posisi
+          const id = shapeNode.id();
+          const x = shapeNode.x();
+          const y = shapeNode.y();
+
+          // Perbarui posisi di store
+          updateShapePosition(id, { x, y });
+        }
+      });
     }
   };
 
-  const handleTopConnectorClick = (e: any) => {
-    e.cancelBubble = true;
+  // Handle transform untuk menyesuaikan ukuran teks dan connector saat shape di-resize
+  const handleTransform = (e: KonvaEventObject<Event>) => {
+    // Mendapatkan node yang sedang di-transform
+    const node = e.target;
+    // Mendapatkan ukuran baru setelah transformasi
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
+
+    // Reset scale menjadi 1 dan perbarui width dan height
+    node.scaleX(1);
+    node.scaleY(1);
+
+    // Perbarui shape dengan ukuran baru
+    onChange({
+      x: node.x(),
+      y: node.y(),
+      width: Math.max(20, node.width() * scaleX),
+      height: Math.max(20, node.height() * scaleY),
+    });
+  };
+
+  // Handler untuk connector points
+  const handleConnectorMouseDown = (
+    e: KonvaEventObject<MouseEvent>,
+    point: string
+  ) => {
+    e.cancelBubble = true; // Penting: hentikan propagasi
+
     if (isConnecting) {
-      completeConnection(shape.id, "top");
+      completeConnection(shape.id, point);
     } else {
-      startConnectionFromPoint(shape.id, "top");
+      startConnectionFromPoint(shape.id, point);
     }
   };
 
-  const handleBottomConnectorClick = (e: any) => {
-    e.cancelBubble = true;
-    if (isConnecting) {
-      completeConnection(shape.id, "bottom");
-    } else {
-      startConnectionFromPoint(shape.id, "bottom");
+  // Handler untuk hover effect pada connector
+  const handleConnectorMouseEnter = (connectorPoint: string) => {
+    setHoveredConnector(connectorPoint);
+    document.body.style.cursor = isConnecting ? "crosshair" : "pointer";
+  };
+
+  const handleConnectorMouseLeave = () => {
+    setHoveredConnector(null);
+    document.body.style.cursor = "default";
+  };
+
+  const getLetterSpacing = (spacing: string = "normal") => {
+    switch (spacing) {
+      case "tight":
+        return -0.5; // Lebih rapat (-0.5px)
+      case "normal":
+        return 0; // Jarak normal
+      case "loose":
+        return 1.5; // Lebih longgar (1.5px)
+      default:
+        return 0;
     }
   };
 
@@ -131,34 +263,6 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
     }
   };
 
-  const handleTextDragMove = (e: any) => {
-    e.cancelBubble = true;
-    const node = textRef.current;
-    const shapeWidth = shape.width || 100;
-    const shapeHeight = shape.height || 50;
-
-    // Calculate bounds to keep text within shape
-    const x = Math.max(0, Math.min(node.x(), shapeWidth - node.width()));
-    const y = Math.max(20, Math.min(node.y(), shapeHeight - node.height() - 5));
-
-    node.x(x);
-    node.y(y);
-  };
-
-  const handleTextDragEnd = (e: any) => {
-    e.cancelBubble = true;
-    const node = textRef.current;
-    onChange({
-      textX: node.x(),
-      textY: node.y(),
-    });
-  };
-
-  const handleShapeClick = (e: any) => {
-    e.cancelBubble = true; // Stop propagation
-    onSelect(); // Panggil onSelect
-  };
-
   const handleClick = (e: KonvaEventObject<MouseEvent>) => {
     e.cancelBubble = true; // Penting: hentikan propagasi
 
@@ -168,6 +272,35 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
     } else {
       onSelect();
     }
+  };
+
+  const handleShapeContextMenu = (e: KonvaEventObject<MouseEvent>) => {
+    e.evt.preventDefault();
+    e.cancelBubble = true;
+
+    // Jika belum dipilih, pilih shape ini dulu
+    if (!isSelected) {
+      onSelect();
+    }
+
+    // Posisi untuk context menu (relatif terhadap container)
+    const stage = shapeRef.current.getStage();
+    const container = stage.container();
+    const containerRect = container.getBoundingClientRect();
+
+    // Koordinat event dalam koordinat panggung
+    const point = stage.getPointerPosition();
+
+    // Konversi ke koordinat layar
+    const x = containerRect.left + point.x;
+    const y = containerRect.top + point.y;
+
+    // Trigger custom event untuk context menu
+    const customEvent = new CustomEvent("shapeContextMenu", {
+      bubbles: true,
+      detail: { x, y, shapeId: shape.id },
+    });
+    container.dispatchEvent(customEvent);
   };
 
   // Fungsi untuk menghasilkan string SVG dari properti shape
@@ -258,14 +391,51 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
         break;
       case "extension2":
         svgContent = `
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="228.46 181.41 76.04 83.6">
-            <g style="" transform="matrix(1, 0, 0, 1.039405, 0, -10.423142)">
-              <rect x="228.958" y="245.876" width="75.036" height="18.64" style="stroke: rgb(0, 0, 0); fill: none;"/>
-              <g transform="matrix(0.436665, 0, 0, 0.518052, 106.434837, 113.239815)" style="">
-                <rect x="291.624" y="268.148" width="31.442" height="13.408" style="stroke: rgb(0, 0, 0); fill: rgb(215, 215, 215);"/>
-                <rect x="291.624" y="263.496" width="11.706" height="4.652" style="stroke: rgb(0, 0, 0); fill: rgb(215, 215, 215);"/>
+          <svg xmlns="http://www.w3.org/2000/svg" style="background: transparent; background-color: transparent;" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="163px" height="112px" viewBox="-0.5 -0.5 163 112">
+            <defs/>
+            <g>
+              <g data-cell-id="0">
+                <g data-cell-id="1">
+                  <g data-cell-id="MOz40AirWiUDpaGuPCgQ-9">
+                    <g/>
+                    <g data-cell-id="MOz40AirWiUDpaGuPCgQ-10">
+                      <g>
+                        <path d="M 0.47 110 L 0 60" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));"/>
+                      </g>
+                    </g>
+                    <g data-cell-id="MOz40AirWiUDpaGuPCgQ-11">
+                      <g>
+                        <path d="M 160.47 110 L 160 60" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));"/>
+                      </g>
+                    </g>
+                    <g data-cell-id="MOz40AirWiUDpaGuPCgQ-12">
+                      <g>
+                        <path d="M 0 110 L 120 110" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));"/>
+                      </g>
+                    </g>
+                    <g data-cell-id="MOz40AirWiUDpaGuPCgQ-13">
+                      <g>
+                        <path d="M 115.47 110 L 161 110" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));"/>
+                      </g>
+                    </g>
+                    <g data-cell-id="MOz40AirWiUDpaGuPCgQ-14">
+                      <g>
+                        <path d="M 0.5 90 L 160.5 90" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));"/>
+                      </g>
+                    </g>
+                    <g data-cell-id="MOz40AirWiUDpaGuPCgQ-15">
+                      <g>
+                        <path d="M 0 60 Q 0 0 80 0 Q 160 0 160 60" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));"/>
+                      </g>
+                    </g>
+                    <g data-cell-id="MOz40AirWiUDpaGuPCgQ-16">
+                      <g>
+                        <image x="4.5" y="93.5" width="19.27" height="13" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHsAAABTCAYAAAC/OHgkAAAAAXNSR0IArs4c6QAAAAlwSFlzAAAPYQAAD2EBqD+naQAAAZhJREFUeF7t3TFuA0EIBdD19XzgvV6idE7hCq00/P/SYzE8QBQr5XVd18+15++1J9XzMv0rHuzzXB7JCPYjZT3zR/9h3/d9XJbv9/szJ2t8IAR7ULxtobC3iQ3yhT0o3rZQ2NvEBvnCHhRvWyjsbWKDfGEPirctFPY2sUG+sAfF2xYKe5vYIF/Yg+JtC4W9TWyQL+xB8baFwt4mNsgX9qB420JhbxMb5LvtS5XBU4XCLuoB2K3YJ36DVmTxyFM/v+E7/kB7pAJFPwob9nVZ43ldYLLzTL++CDZsazyxB0x2ouqXN8GGbY0n9oDJTlS1xotUYcO2xot6ADZs13hiD5jsRFUHWpEqbNjWeFEPwIbtGk/sAZOdqOpAK1KFDdsaL+oB2LBd44k9YLITVR1oRaqwYVvjRT0AG7ZrPLEHTHaiqgOtSBU2bGu8qAdgw3aNJ/aAyU5UdaAVqcKGbY0X9QBs2K7xxB4w2YmqDrQiVdiwrfGiHoAN2zWe2AMmO1HVgVakChu2NV7UA7BhF1Wg9Kn+PWMRPOwi7F945jEkM8lwQwAAAABJRU5ErkJggg==" preserveAspectRatio="none"/>
+                      </g>
+                    </g>
+                  </g>
+                </g>
               </g>
-              <path style="stroke: rgb(0, 0, 0); fill: none;" d="M 228.958 222.158 L 228.958 245.876 L 303.994 245.876 L 303.994 222.222 C 298.294 169.367 232.928 176.067 228.958 222.158 Z"/>
             </g>
           </svg>
         `;
@@ -1055,39 +1225,67 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
 
     return svgContent;
   };
+  // Mendapatkan ukuran font yang sesuai
+  const idFontSize = getProportionalFontSize(shape.fontSizeId || 13);
+  const mainFontSize = getProportionalFontSize(shape.fontSize || 13);
+  const connectorRadius = getConnectorRadius();
+
+  // Render connector dengan efek visual yang lebih baik
+  const renderConnector = (position: string, x: number, y: number) => {
+    const isHovered = hoveredConnector === position;
+    const isActive =
+      isConnecting &&
+      ((connectingFromId === shape.id && connectingFromPoint === position) ||
+        (connectingFromId !== shape.id && connectingFromId !== null));
+
+    // Enhanced visuals based on state
+    const fill = isActive ? "#3B82F6" : isHovered ? "#bbdefb" : "#fff";
+    const stroke = isActive ? "#1E40AF" : isHovered ? "#2563EB" : "#666";
+    const radiusMultiplier = isHovered ? 1.3 : 1;
+    const shadowBlur = isHovered ? 4 : 2;
+    const shadowOpacity = isHovered ? 0.5 : 0.2;
+
+    return (
+      <Circle
+        x={x}
+        y={y}
+        radius={connectorRadius * radiusMultiplier}
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={2}
+        shadowColor="rgba(0,0,0,0.3)"
+        shadowBlur={shadowBlur}
+        shadowOpacity={shadowOpacity}
+        shadowOffset={{ x: 1, y: 1 }}
+        onMouseDown={(e) => handleConnectorMouseDown(e, position)}
+        onMouseEnter={() => handleConnectorMouseEnter(position)}
+        onMouseLeave={handleConnectorMouseLeave}
+      />
+    );
+  };
+
+  // Cek apakah connector points harus ditampilkan (saat selected, hover, atau sedang dalam mode koneksi)
+  const shouldShowConnectors =
+    isSelected || hoveredConnector !== null || isConnecting;
 
   return (
     <>
       <Group
-        ref={shapeRef}
+        id={shape.id}
         x={shape.x}
         y={shape.y}
         width={shape.width || 100}
         height={shape.height || 50}
         draggable
         onClick={handleClick}
-        onTap={handleShapeClick}
-        onDragEnd={(e) => {
-          onChange({
-            x: e.target.x(),
-            y: e.target.y(),
-          });
-        }}
-        onTransformEnd={() => {
-          const node = shapeRef.current;
-          const scaleX = node.scaleX();
-          const scaleY = node.scaleY();
-
-          node.scaleX(1);
-          node.scaleY(1);
-
-          onChange({
-            x: node.x(),
-            y: node.y(),
-            width: Math.max(5, node.width() * scaleX),
-            height: Math.max(5, node.height() * scaleY),
-          });
-        }}
+        onContextMenu={handleShapeContextMenu}
+        onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
+        onDragEnd={handleDragEnd}
+        onTransform={handleTransform}
+        ref={shapeRef}
+        onMouseEnter={() => setHoveredConnector("shape")}
+        onMouseLeave={() => setHoveredConnector(null)}
       >
         <SVGImage
           svgContent={getSvgString()}
@@ -1095,7 +1293,7 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
           height={shape.height || 50}
         />
 
-        {/* Jika tipe adalah 'text', render teks langsung tanpa id dan styling lainnya */}
+        {/* Render teks dengan ukuran yang proporsional */}
         {shape.type === "text" ? (
           <Text
             ref={textRef}
@@ -1106,34 +1304,35 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
             height={shape.height || 40}
             fontSize={shape.fontSize || 14}
             fontFamily={shape.fontFamily || "Arial"}
-            fontStyle={shape.fontStyle || "normal"}
-            fontWeight={shape.fontWeight || "normal"}
+            fontStyle={(() => {
+              if (shape.fontWeight === "bold" && shape.fontStyle === "italic")
+                return "bold italic";
+              if (shape.fontWeight === "bold") return "bold";
+              if (shape.fontStyle === "italic") return "italic";
+              return "normal";
+            })()}
             align={shape.align || "center"}
             verticalAlign="middle"
             fill="#000"
             padding={5}
             wrap="word"
-            draggable={false} // Jangan buat teks draggable dalam shape
-            onDblClick={() => {
-              // Handle editing pada double click
-              console.log("Edit text:", shape.id);
-              // Implementasi edit mode di sini
-            }}
+            draggable={false}
           />
         ) : (
-          // Render teks normal untuk shape lainnya
           <>
-            {/* ID Text at top-left corner with background */}
+            {/* ID Text with proportional font size */}
             <Text
               text={`${getDefaultPrefix()}${shape.idText || ""}`}
               x={8}
               y={6}
-              fontSize={shape.fontSizeId || 13}
+              fontSize={idFontSize}
               fontFamily="Arial, sans-serif"
               fill="#333"
-              fontStyle="bold"
+              fontStyle={shape.fontWeight === "bold" ? "bold" : "normal"}
+              letterSpacing={getLetterSpacing(shape.interLine)}
             />
-            {/* Main text with better positioning and wrapping */}
+
+            {/* Main text with proportional font size */}
             <Text
               ref={textRef}
               text={shape.value || shape.text || shape.title || ""}
@@ -1143,20 +1342,18 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
               height={Math.max(20, (shape.height || 50) - 40)}
               align="center"
               verticalAlign="middle"
-              fontSize={shape.fontSize || 13}
+              fontSize={mainFontSize}
               fontFamily="Arial, sans-serif"
+              fontStyle={shape.descFontWeight === "bold" ? "bold" : "normal"}
               fill="#333"
-              lineHeight={1.2}
+              letterSpacing={getLetterSpacing(shape.descInterLine)}
               wrap="word"
               ellipsis={true}
-              draggable
-              onDragMove={handleTextDragMove}
-              onDragEnd={handleTextDragEnd}
             />
           </>
         )}
 
-        {/* Alternative: Multi-line text handling jika diperlukan */}
+        {/* Alternative: Multi-line text handling */}
         {(shape as any).multiline && (
           <Text
             text={formatMultilineText(
@@ -1165,117 +1362,46 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
             x={12}
             y={shape.textY || 30}
             width={(shape.width || 100) - 24}
-            fontSize={shape.fontSize || 12}
+            fontSize={getProportionalFontSize(shape.fontSize || 12)}
             fontFamily="Arial, sans-serif"
             fill="#333"
             lineHeight={1.3}
             align="center"
           />
         )}
-
-        {/* Connection points hanya untuk shape non-text */}
-        {shape.type !== "text" && (
-          <>
-            {/* Titik penghubung kiri */}
-            <Circle
-              x={0}
-              y={(shape.height || 50) / 2}
-              radius={5}
-              fill={
-                isConnecting && connectingFromId === shape.id
-                  ? "#3B82F6"
-                  : "#fff"
-              }
-              stroke={
-                isConnecting && connectingFromId === shape.id
-                  ? "#1E40AF"
-                  : "#666"
-              }
-              strokeWidth={2}
-              shadowColor="rgba(0,0,0,0.2)"
-              shadowBlur={2}
-              shadowOffset={{ x: 1, y: 1 }}
-              onClick={handleLeftConnectorClick}
-              onTap={handleLeftConnectorClick}
-            />
-
-            {/* Titik penghubung kanan */}
-            <Circle
-              x={shape.width || 100}
-              y={(shape.height || 50) / 2}
-              radius={5}
-              fill={
-                isConnecting && connectingFromId === shape.id
-                  ? "#3B82F6"
-                  : "#fff"
-              }
-              stroke={
-                isConnecting && connectingFromId === shape.id
-                  ? "#1E40AF"
-                  : "#666"
-              }
-              strokeWidth={2}
-              shadowColor="rgba(0,0,0,0.2)"
-              shadowBlur={2}
-              shadowOffset={{ x: 1, y: 1 }}
-              onClick={handleRightConnectorClick}
-              onTap={handleRightConnectorClick}
-            />
-
-            {/* Titik penghubung atas */}
-            <Circle
-              x={(shape.width || 100) / 2}
-              y={0}
-              radius={5}
-              fill={
-                isConnecting && connectingFromId === shape.id
-                  ? "#3B82F6"
-                  : "#fff"
-              }
-              stroke={
-                isConnecting && connectingFromId === shape.id
-                  ? "#1E40AF"
-                  : "#666"
-              }
-              strokeWidth={2}
-              shadowColor="rgba(0,0,0,0.2)"
-              shadowBlur={2}
-              shadowOffset={{ x: 1, y: 1 }}
-              onClick={handleTopConnectorClick}
-              onTap={handleTopConnectorClick}
-            />
-
-            {/* Titik penghubung bawah */}
-            <Circle
-              x={(shape.width || 100) / 2}
-              y={shape.height || 50}
-              radius={5}
-              fill={
-                isConnecting && connectingFromId === shape.id
-                  ? "#3B82F6"
-                  : "#fff"
-              }
-              stroke={
-                isConnecting && connectingFromId === shape.id
-                  ? "#1E40AF"
-                  : "#666"
-              }
-              strokeWidth={2}
-              shadowColor="rgba(0,0,0,0.2)"
-              shadowBlur={2}
-              shadowOffset={{ x: 1, y: 1 }}
-              onClick={handleBottomConnectorClick}
-              onTap={handleBottomConnectorClick}
-            />
-          </>
-        )}
       </Group>
+
+      {/* Connection points - ditampilkan saat selected, hover, atau sedang connecting */}
+      {shape.type !== "text" && shouldShowConnectors && (
+        <Group x={shape.x} y={shape.y}>
+          {/* Titik penghubung kiri */}
+          {renderConnector("left", 0, (shape.height || 50) / 2)}
+
+          {/* Titik penghubung kanan */}
+          {renderConnector(
+            "right",
+            shape.width || 100,
+            (shape.height || 50) / 2
+          )}
+
+          {/* Titik penghubung atas */}
+          {renderConnector("top", (shape.width || 100) / 2, 0)}
+
+          {/* Titik penghubung bawah */}
+          {renderConnector(
+            "bottom",
+            (shape.width || 100) / 2,
+            shape.height || 50
+          )}
+        </Group>
+      )}
 
       {isSelected && (
         <Transformer
           ref={transformerRef}
           boundBoxFunc={(oldBox, newBox) => {
-            if (newBox.width < 10 || newBox.height < 10) {
+            // Minimum size of 20x20
+            if (newBox.width < 20 || newBox.height < 20) {
               return oldBox;
             }
             return newBox;
