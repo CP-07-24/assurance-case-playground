@@ -23,7 +23,6 @@ const ZoomSlider: React.FC<ZoomSliderProps> = ({ value, onChange }) => {
         onChange={handleChange}
         className="h-1 w-32 mx-2 accent-blue-500 cursor-pointer"
       />
-      <div className="text-xs text-gray-500 w-4">200</div>
     </div>
   );
 };

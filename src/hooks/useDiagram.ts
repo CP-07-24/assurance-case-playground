@@ -27,7 +27,6 @@ export const useDiagram = () => {
     // Helper untuk memeriksa apakah elemen teks kosong
     const checkIfTextEmpty = () => {
       const editingElement = document.activeElement;
-
       if (!editingElement) return false;
 
       // Jika element adalah input atau textarea
@@ -90,19 +89,34 @@ export const useDiagram = () => {
           // Jika teks sudah kosong dan user menekan Backspace/Delete lagi
           if (isEmpty && isTextEmpty) {
             e.preventDefault();
-            setEditingShape(null);
-            deleteShape(editingShapeId);
-            setIsTextEmpty(false); // Reset state
+            // Tidak perlu menghapus shape
             return;
           }
 
           // Update state isTextEmpty untuk keypress selanjutnya
-          // Kita set timeout untuk memberikan waktu bagi browser menghapus karakter
           setTimeout(() => {
             setIsTextEmpty(checkIfTextEmpty());
           }, 0);
 
           return; // Biarkan default behavior untuk menghapus karakter
+        }
+
+        // Tambahkan kondisi untuk mencegah penghapusan shape setelah editing field
+        // Jika activeElement adalah field input/text, jangan hapus shape
+        const isTextInput =
+          document.activeElement instanceof HTMLInputElement ||
+          document.activeElement instanceof HTMLTextAreaElement ||
+          (document.activeElement &&
+            document.activeElement.getAttribute("contenteditable") ===
+              "true") ||
+          (document.activeElement?.tagName === "TEXTAREA" &&
+            document.activeElement?.parentElement?.classList.contains(
+              "konvajs-content"
+            ));
+
+        if (isTextInput) {
+          // Jika kita masih di dalam field input, jangan hapus shape
+          return;
         }
 
         // Behavior normal jika tidak sedang edit (hapus shape/connection)
@@ -113,6 +127,7 @@ export const useDiagram = () => {
           e.preventDefault();
           deleteConnection(selectedConnection.id);
         }
+
         return;
       }
 
@@ -169,6 +184,7 @@ export const useDiagram = () => {
     };
 
     window.addEventListener("keydown", handleKeyDown);
+
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };

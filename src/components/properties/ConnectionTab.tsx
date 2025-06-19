@@ -23,7 +23,8 @@ const ConnectionTab: React.FC = () => {
           value={selectedConnection.style}
           options={[
             { value: "line", label: "Line" },
-            { value: "arrow", label: "Arrow" },
+            { value: "arrow", label: "InContextOf" },
+            { value: "solidArrow", label: "SupportedBy" },
             { value: "doubleArrow", label: "Double Arrow" },
             { value: "dashed", label: "Dashed" },
             { value: "dotted", label: "Dotted" },

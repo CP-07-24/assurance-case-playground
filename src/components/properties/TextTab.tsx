@@ -93,24 +93,6 @@ const TextTab: React.FC = () => {
           >
             Italic
           </button>
-
-          <button
-            className={`flex-1 py-2 border ${
-              selectedShape.textDecoration === "underline"
-                ? "bg-gray-100 border-gray-400"
-                : "border-gray-300"
-            } rounded-md text-sm`}
-            onClick={() =>
-              updateSelectedShape({
-                textDecoration:
-                  selectedShape.textDecoration === "underline"
-                    ? "none"
-                    : "underline",
-              })
-            }
-          >
-            Underline
-          </button>
         </div>
       </PropertySection>
 

@@ -8,6 +8,10 @@ import {
   Type,
   PanelRight,
   MoveUpLeft,
+  ArrowRight,
+  ArrowLeftRight,
+  MinusIcon,
+  MoreHorizontal,
 } from "lucide-react";
 import { useDiagramContext } from "../../store/DiagramContext";
 import ZoomSlider from "../ui/ZoomSlider";
@@ -25,6 +29,9 @@ const ToolBar: React.FC = () => {
     zoomLevel,
     setZoomLevel,
     addTextElement,
+    startDrawingConnection,
+    isDrawingConnection,
+    cancelDrawingConnection,
   } = useDiagramContext();
 
   // State untuk semua modal dan menu
@@ -37,7 +44,6 @@ const ToolBar: React.FC = () => {
 
   const handleTextClick = () => {
     console.log("Text button clicked");
-
     // Determine position based on stage and viewport
     const stageContainer =
       document.querySelector(".konva-stage-content") ||
@@ -62,14 +68,26 @@ const ToolBar: React.FC = () => {
       x: x,
       y: y,
       text: "Text",
-      width: 100,
-      height: 40,
+      width: 150, // Ukuran lebih besar sesuai perubahan default
+      height: 60, // Ukuran lebih besar sesuai perubahan default
       editable: true,
     });
   };
 
   const handleConnectionClick = () => {
+    // If already drawing a connection, cancel it
+    if (isDrawingConnection) {
+      cancelDrawingConnection();
+    }
     setShowConnectionMenu(!showConnectionMenu);
+  };
+
+  // Implement fungsi untuk menangani pemilihan connection style
+  const handleConnectionStyleSelect = (
+    style: "line" | "arrow" | "solidArrow" | "doubleArrow" | "dashed" | "dotted"
+  ) => {
+    startDrawingConnection(style);
+    setShowConnectionMenu(false);
   };
 
   const handleUseTemplate = () => {
@@ -132,6 +150,7 @@ const ToolBar: React.FC = () => {
         >
           <Undo2 size={20} />
         </button>
+
         <button
           className={`p-1.5 rounded-md ${
             canRedo
@@ -155,30 +174,70 @@ const ToolBar: React.FC = () => {
           <Type size={20} />
         </button>
 
-        {/* Connection Tool - dengan dropdown menu */}
+        {/* Connection Tool - dengan improved dropdown menu */}
         <div className="relative">
           <button
-            className="p-1.5 rounded-md text-gray-700 hover:bg-gray-100"
+            className={`p-1.5 rounded-md ${
+              isDrawingConnection
+                ? "bg-blue-100 text-blue-700"
+                : "text-gray-700 hover:bg-gray-100"
+            }`}
             onClick={handleConnectionClick}
           >
             <MoveUpLeft size={20} />
           </button>
+
           {showConnectionMenu && (
             <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50">
               <div className="p-2">
-                <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                <button
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md flex items-center"
+                  onClick={() => handleConnectionStyleSelect("line")}
+                >
+                  <MinusIcon size={16} className="mr-2" />
                   Line
                 </button>
-                <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
-                  Arrow
+                <button
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md flex items-center"
+                  onClick={() => handleConnectionStyleSelect("arrow")}
+                >
+                  <ArrowRight size={16} className="mr-2" />
+                  InContextOf
                 </button>
-                <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                <button
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md flex items-center"
+                  onClick={() => handleConnectionStyleSelect("solidArrow")}
+                >
+                  <ArrowRight
+                    size={16}
+                    className="mr-2"
+                    style={{ fill: "currentColor" }}
+                  />
+                  SupportedBy
+                </button>
+                <button
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md flex items-center"
+                  onClick={() => handleConnectionStyleSelect("doubleArrow")}
+                >
+                  <ArrowLeftRight size={16} className="mr-2" />
                   Double Arrow
                 </button>
-                <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                <button
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md flex items-center"
+                  onClick={() => handleConnectionStyleSelect("dashed")}
+                >
+                  <MinusIcon
+                    size={16}
+                    className="mr-2"
+                    style={{ strokeDasharray: "4,4" }}
+                  />
                   Dashed Line
                 </button>
-                <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                <button
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md flex items-center"
+                  onClick={() => handleConnectionStyleSelect("dotted")}
+                >
+                  <MoreHorizontal size={16} className="mr-2" />
                   Dotted Line
                 </button>
               </div>
@@ -196,6 +255,7 @@ const ToolBar: React.FC = () => {
             {Math.round(zoomLevel * 100)}%
           </span>
         </div>
+
         <button className="p-1.5 ml-3 rounded-md text-gray-700 hover:bg-gray-100">
           <PanelRight size={20} />
         </button>

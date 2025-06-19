@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Search } from "lucide-react";
 import ShapeCategory from "../shapes/ShapeCategory";
 import AiPanel from "../ai/AiPanel";
@@ -24,6 +24,26 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ activeTab }) => {
     setSearchText(e.target.value);
   };
 
+  // Cek apakah ada hasil pencarian
+  const hasSearchResults = useMemo(() => {
+    if (!searchText) return true; // Jika tidak ada pencarian, return true
+
+    // Fungsi untuk mencari shapes yang cocok dengan searchText
+    const hasMatch = (shapes: any[]) => {
+      return shapes.some((shape) =>
+        shape.title.toLowerCase().includes(searchText.toLowerCase())
+      );
+    };
+
+    // Cek apakah ada hasil di salah satu kategori
+    return (
+      hasMatch(gsnElements) ||
+      hasMatch(gsnExtensionElements) ||
+      hasMatch(sacmElements) ||
+      hasMatch(sacmExtensionElements)
+    );
+  }, [searchText]);
+
   if (activeTab === "ai") {
     return isAuthenticated ? <AiPanel /> : <LoginPanel onSuccess={() => {}} />;
   }
@@ -44,31 +64,37 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ activeTab }) => {
           />
         </div>
       </div>
-
       <div className="flex-1 overflow-y-auto pb-4">
-        <ShapeCategory
-          title="GSN Elements"
-          shapes={gsnElements}
-          filter={searchText}
-        />
-
-        <ShapeCategory
-          title="GSN Extensions Elements"
-          shapes={gsnExtensionElements}
-          filter={searchText}
-        />
-
-        <ShapeCategory
-          title="SACM Elements"
-          shapes={sacmElements}
-          filter={searchText}
-        />
-
-        <ShapeCategory
-          title="SACM Extension Elements"
-          shapes={sacmExtensionElements}
-          filter={searchText}
-        />
+        {hasSearchResults ? (
+          // Jika ada hasil pencarian, tampilkan kategori seperti biasa
+          <>
+            <ShapeCategory
+              title="GSN Elements"
+              shapes={gsnElements}
+              filter={searchText}
+            />
+            <ShapeCategory
+              title="GSN Extensions Elements"
+              shapes={gsnExtensionElements}
+              filter={searchText}
+            />
+            <ShapeCategory
+              title="SACM Elements"
+              shapes={sacmElements}
+              filter={searchText}
+            />
+            <ShapeCategory
+              title="SACM Extension Elements"
+              shapes={sacmExtensionElements}
+              filter={searchText}
+            />
+          </>
+        ) : (
+          // Jika tidak ada hasil, tampilkan pesan
+          <div className="p-4 text-center text-gray-500">
+            <p>Tidak ada hasil yang ditemukan</p>
+          </div>
+        )}
       </div>
     </div>
   );

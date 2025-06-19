@@ -1,22 +1,17 @@
 "use client"; // Wajib karena menggunakan hooks dan interaktivitas
+
 import React, { useState, useEffect } from "react";
-import {
-  Menu,
-  Type,
-  FolderKanban,
-  Edit,
-  HelpCircle,
-  Lightbulb,
-} from "lucide-react";
+import { Edit, HelpCircle, Lightbulb, FolderKanban } from "lucide-react";
 import { useDiagramContext } from "../../store/DiagramContext";
 import MenuDropdown from "../ui/MenuDropdown";
-// import { FcGoogle } from "react-icons/fc";
-// import {
-//   signInWithGoogle,
-//   firebaseSignOut,
-//   auth,
-// } from "../../lib/firebase/auth";
-// import { User } from "firebase/auth";
+import { FcGoogle } from "react-icons/fc";
+import {
+  signInWithGoogle,
+  firebaseSignOut,
+  auth,
+} from "../../lib/firebase/auth";
+import { User } from "firebase/auth";
+import Logo from "../../assets/logoeditor.png";
 
 const TopBar: React.FC = () => {
   const {
@@ -36,18 +31,27 @@ const TopBar: React.FC = () => {
   } = useDiagramContext();
 
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
-  // const [user, setUser] = useState<User | null>(null);
-  // const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Pantau perubahan status autentikasi
-  // useEffect(() => {
-  //   const unsubscribe = auth.onAuthStateChanged((user) => {
-  //     setUser(user);
-  //     setLoading(false);
-  //   });
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setUser(user);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  //   return () => unsubscribe();
-  // }, []);
+  // Fungsi untuk membuka project baru di tab baru
+  const openNewProject = () => {
+    // Mendapatkan URL saat ini
+    const currentUrl = window.location.href;
+    // Mendapatkan URL dasar (tanpa parameter query jika ada)
+    const baseUrl = currentUrl.split("?")[0];
+    // Buka URL dasar di tab baru
+    window.open(baseUrl, "_blank");
+  };
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -59,7 +63,6 @@ const TopBar: React.FC = () => {
       ) {
         return;
       }
-
       if (e.ctrlKey || e.metaKey) {
         switch (e.key.toLowerCase()) {
           case "z":
@@ -101,11 +104,18 @@ const TopBar: React.FC = () => {
             break;
         }
       }
-
       // Delete key for deleting selected shapes
       if (e.key === "Delete" || e.key === "Backspace") {
-        e.preventDefault();
-        deleteSelectedShapes();
+        // Hanya jika tidak ada input yang difokuskan
+        if (
+          !(
+            e.target instanceof HTMLInputElement ||
+            e.target instanceof HTMLTextAreaElement
+          )
+        ) {
+          e.preventDefault();
+          deleteSelectedShapes();
+        }
       }
     };
 
@@ -121,63 +131,10 @@ const TopBar: React.FC = () => {
     duplicateSelectedShapes,
   ]);
 
-  const typographyMenuItems = [
-    {
-      label: "Font Family",
-      onClick: () => console.log("Font Family"),
-      shortcut: "",
-    },
-    {
-      label: "Font Size",
-      onClick: () => console.log("Font Size"),
-      shortcut: "",
-    },
-    {
-      label: "Text Style",
-      onClick: () => console.log("Text Style"),
-      shortcut: "",
-    },
-  ];
-
   const projectMenuItems = [
     {
       label: "New Project",
-      onClick: () => {
-        // Implement new project functionality
-        console.log("New Project - implement this");
-      },
-      shortcut: "Ctrl+N",
-    },
-    {
-      label: "Open Project",
-      onClick: () => {
-        // Implement open project functionality
-        console.log("Open Project - implement this");
-      },
-      shortcut: "Ctrl+O",
-    },
-    {
-      label: "Save Project",
-      onClick: () => {
-        // Implement save project functionality
-        console.log("Save Project - implement this");
-      },
-      shortcut: "Ctrl+S",
-    },
-    {
-      label: "Import",
-      onClick: () => {
-        // Implement import functionality
-        console.log("Import - implement this");
-      },
-      shortcut: "",
-    },
-    {
-      label: "Export",
-      onClick: () => {
-        // Implement export functionality
-        console.log("Export - implement this");
-      },
+      onClick: openNewProject,
       shortcut: "",
     },
   ];
@@ -287,47 +244,34 @@ const TopBar: React.FC = () => {
     setActiveMenu(null);
   };
 
-  // const handleSignOut = async () => {
-  //   try {
-  //     await firebaseSignOut(auth);
-  //   } catch (error) {
-  //     console.error("Error signing out:", error);
-  //   }
-  // };
+  const handleSignOut = async () => {
+    try {
+      await firebaseSignOut(auth);
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
 
   return (
-    <div className="flex items-center justify-between bg-white border-b border-gray-200 h-12 px-3">
+    <div
+      className="flex items-center justify-between bg-white border-b border-gray-200 h-12 px-3"
+      data-preserve-selection="true"
+    >
       <div className="flex items-center">
-        <button
-          className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100"
+        <div
+          className="flex items-center cursor-pointer"
           onClick={toggleSidebar}
         >
-          <Menu size={20} />
-        </button>
+          <img src={Logo} alt="Editor Logo" className="h-8 w-auto" />
+        </div>
 
-        <div className="flex ml-2">
-          {/* Typography Menu */}
+        <div className="flex ml-6 space-x-1">
+          {/* PROJECT Menu */}
           <div className="relative">
             <button
-              className={`px-3 py-1.5 text-sm font-medium ${activeMenu === "typography" ? "bg-gray-100" : "hover:bg-gray-50"
-                } rounded-md`}
-              onClick={() => handleMenuClick("typography")}
-            >
-              <div className="flex items-center">
-                <Type size={16} className="mr-1.5" />
-                Typography
-              </div>
-            </button>
-            {activeMenu === "typography" && (
-              <MenuDropdown items={typographyMenuItems} onClose={closeMenu} />
-            )}
-          </div>
-
-          {/* Project Menu */}
-          <div className="relative">
-            <button
-              className={`px-3 py-1.5 text-sm font-medium ${activeMenu === "project" ? "bg-gray-100" : "hover:bg-gray-50"
-                } rounded-md`}
+              className={`px-3 py-1.5 text-sm font-medium ${
+                activeMenu === "project" ? "bg-gray-100" : "hover:bg-gray-50"
+              } rounded-md`}
               onClick={() => handleMenuClick("project")}
             >
               <div className="flex items-center">
@@ -340,11 +284,12 @@ const TopBar: React.FC = () => {
             )}
           </div>
 
-          {/* Edit Menu */}
+          {/* EDIT Menu */}
           <div className="relative">
             <button
-              className={`px-3 py-1.5 text-sm font-medium ${activeMenu === "edit" ? "bg-gray-100" : "hover:bg-gray-50"
-                } rounded-md`}
+              className={`px-3 py-1.5 text-sm font-medium ${
+                activeMenu === "edit" ? "bg-gray-100" : "hover:bg-gray-50"
+              } rounded-md`}
               onClick={() => handleMenuClick("edit")}
             >
               <div className="flex items-center">
@@ -357,16 +302,17 @@ const TopBar: React.FC = () => {
             )}
           </div>
 
-          {/* Help Menu */}
+          {/* DOCUMENTATION Menu */}
           <div className="relative">
             <button
-              className={`px-3 py-1.5 text-sm font-medium ${activeMenu === "help" ? "bg-gray-100" : "hover:bg-gray-50"
-                } rounded-md`}
+              className={`px-3 py-1.5 text-sm font-medium ${
+                activeMenu === "help" ? "bg-gray-100" : "hover:bg-gray-50"
+              } rounded-md`}
               onClick={() => handleMenuClick("help")}
             >
               <div className="flex items-center">
                 <HelpCircle size={16} className="mr-1.5" />
-                HELP
+                DOCUMENTATION
               </div>
             </button>
             {activeMenu === "help" && (
@@ -374,11 +320,12 @@ const TopBar: React.FC = () => {
             )}
           </div>
 
-          {/* Guidance Menu */}
+          {/* GUIDANCE Menu */}
           <div className="relative">
             <button
-              className={`px-3 py-1.5 text-sm font-medium ${activeMenu === "guidance" ? "bg-gray-100" : "hover:bg-gray-50"
-                } rounded-md`}
+              className={`px-3 py-1.5 text-sm font-medium ${
+                activeMenu === "guidance" ? "bg-gray-100" : "hover:bg-gray-50"
+              } rounded-md`}
               onClick={() => handleMenuClick("guidance")}
             >
               <div className="flex items-center">
@@ -393,7 +340,8 @@ const TopBar: React.FC = () => {
         </div>
       </div>
 
-      {/* <div className="flex items-center">
+      {/* User Authentication Section */}
+      <div className="flex items-center">
         {loading ? (
           <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
         ) : user ? (
@@ -406,7 +354,7 @@ const TopBar: React.FC = () => {
                   width={32}
                   height={32}
                   className="rounded-full"
-                  referrerPolicy="no-referrer"
+                  referrerPolicy="no-referrer" // Penting untuk foto profil Google
                 />
               ) : (
                 <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full">
@@ -418,6 +366,7 @@ const TopBar: React.FC = () => {
               </span>
             </div>
 
+            {/* User Dropdown Menu */}
             <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
               <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
                 {user.email}
@@ -453,7 +402,7 @@ const TopBar: React.FC = () => {
             <span>Sign In</span>
           </button>
         )}
-      </div> */}
+      </div>
     </div>
   );
 };
