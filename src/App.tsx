@@ -35,9 +35,11 @@ function App() {
 
   if (view === "template-selection") {
     return (
-      <DiagramProvider>
-        <TemplateSelectionWrapper onSelect={handleTemplateSelect} />
-      </DiagramProvider>
+      <AuthProvider>
+        <DiagramProvider>
+          <TemplateSelectionWrapper onSelect={handleTemplateSelect} />
+        </DiagramProvider>
+      </AuthProvider>
     );
   }
 
