@@ -24,7 +24,7 @@ const downloadFile = (content: string | Blob, filename: string) => {
 };
 
 // Export to PDF - IMPROVED with better canvas checking
-export const exportToPDF = async (stageRef: any) => {
+export const exportToPDF = async (stageRef: React.RefObject<any>) => {
   console.log('PDF Export - Stage ref received:', stageRef);
   console.log('PDF Export - Stage ref current:', stageRef?.current);
   
