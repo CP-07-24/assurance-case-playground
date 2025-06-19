@@ -1,0 +1,66 @@
+{
+  "id": "social-media-recommendation",
+  "title": "Ethical Assurance for Social Media Recommendation Algorithm",
+  "elements": [
+    {
+      "id": "G1",
+      "type": "Goal",
+      "description": "Recommendations are unbiased and ethical",
+      "children": ["S1", "S2"]
+    },
+    {
+      "id": "S1",
+      "type": "Strategy",
+      "description": "Bias detection and mitigation",
+      "children": ["SG1", "SG2"]
+    },
+    {
+      "id": "S2",
+      "type": "Strategy",
+      "description": "Transparency and user control",
+      "children": ["SG3"]
+    },
+    {
+      "id": "SG1",
+      "type": "SubGoal",
+      "description": "Demographic parity in recommendations",
+      "children": ["E1"]
+    },
+    {
+      "id": "SG2",
+      "type": "SubGoal",
+      "description": "No harmful content amplification",
+      "children": ["E2"]
+    },
+    {
+      "id": "SG3",
+      "type": "SubGoal",
+      "description": "User preference customization options",
+      "children": ["E3"]
+    },
+    {
+      "id": "E1",
+      "type": "Evidence",
+      "description": "Bias audit results (internal and third-party)",
+      "children": []
+    },
+    {
+      "id": "E2",
+      "type": "Evidence",
+      "description": "Content moderation logs",
+      "children": []
+    },
+    {
+      "id": "E3",
+      "type": "Evidence",
+      "description": "User satisfaction survey data",
+      "children": []
+    },
+    {
+      "id": "A1",
+      "type": "Assumption",
+      "description": "User data collected with proper consent",
+      "children": []
+    }
+  ]
+}

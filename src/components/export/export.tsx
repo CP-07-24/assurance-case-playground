@@ -85,42 +85,6 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => {
               </button>
             ))}
 
-            <button
-              onClick={() => handleExport("pdf")}
-              disabled={exporting}
-              className="flex items-center justify-center p-3 border rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FileText className="mr-2 text-red-500" size={20} />
-              <span>PDF</span>
-            </button>
-
-            <button
-              onClick={() => handleExport("png")}
-              disabled={exporting}
-              className="flex items-center justify-center p-3 border rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Image className="mr-2 text-green-500" size={20} />
-              <span>PNG</span>
-            </button>
-
-            <button
-              onClick={() => handleExport("json")}
-              disabled={exporting}
-              className="flex items-center justify-center p-3 border rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FileJson className="mr-2 text-blue-500" size={20} />
-              <span>JSON</span>
-            </button>
-
-            <button
-              onClick={() => handleExport("xml")}
-              disabled={exporting}
-              className="flex items-center justify-center p-3 border rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Code className="mr-2 text-purple-500" size={20} />
-              <span>XML</span>
-            </button>
-
           </div>
         </section>
       </div>

@@ -10,13 +10,13 @@ import {
 } from "lucide-react";
 import { useDiagramContext } from "../../store/DiagramContext";
 import MenuDropdown from "../ui/MenuDropdown";
-import { FcGoogle } from "react-icons/fc";
-import {
-  signInWithGoogle,
-  firebaseSignOut,
-  auth,
-} from "../../lib/firebase/auth";
-import { User } from "firebase/auth";
+// import { FcGoogle } from "react-icons/fc";
+// import {
+//   signInWithGoogle,
+//   firebaseSignOut,
+//   auth,
+// } from "../../lib/firebase/auth";
+// import { User } from "firebase/auth";
 
 const TopBar: React.FC = () => {
   const {
@@ -36,18 +36,18 @@ const TopBar: React.FC = () => {
   } = useDiagramContext();
 
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  // const [user, setUser] = useState<User | null>(null);
+  // const [loading, setLoading] = useState(true);
 
   // Pantau perubahan status autentikasi
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setUser(user);
-      setLoading(false);
-    });
+  // useEffect(() => {
+  //   const unsubscribe = auth.onAuthStateChanged((user) => {
+  //     setUser(user);
+  //     setLoading(false);
+  //   });
 
-    return () => unsubscribe();
-  }, []);
+  //   return () => unsubscribe();
+  // }, []);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -287,13 +287,13 @@ const TopBar: React.FC = () => {
     setActiveMenu(null);
   };
 
-  const handleSignOut = async () => {
-    try {
-      await firebaseSignOut(auth);
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
+  // const handleSignOut = async () => {
+  //   try {
+  //     await firebaseSignOut(auth);
+  //   } catch (error) {
+  //     console.error("Error signing out:", error);
+  //   }
+  // };
 
   return (
     <div className="flex items-center justify-between bg-white border-b border-gray-200 h-12 px-3">
@@ -309,9 +309,8 @@ const TopBar: React.FC = () => {
           {/* Typography Menu */}
           <div className="relative">
             <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "typography" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
+              className={`px-3 py-1.5 text-sm font-medium ${activeMenu === "typography" ? "bg-gray-100" : "hover:bg-gray-50"
+                } rounded-md`}
               onClick={() => handleMenuClick("typography")}
             >
               <div className="flex items-center">
@@ -327,9 +326,8 @@ const TopBar: React.FC = () => {
           {/* Project Menu */}
           <div className="relative">
             <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "project" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
+              className={`px-3 py-1.5 text-sm font-medium ${activeMenu === "project" ? "bg-gray-100" : "hover:bg-gray-50"
+                } rounded-md`}
               onClick={() => handleMenuClick("project")}
             >
               <div className="flex items-center">
@@ -345,9 +343,8 @@ const TopBar: React.FC = () => {
           {/* Edit Menu */}
           <div className="relative">
             <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "edit" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
+              className={`px-3 py-1.5 text-sm font-medium ${activeMenu === "edit" ? "bg-gray-100" : "hover:bg-gray-50"
+                } rounded-md`}
               onClick={() => handleMenuClick("edit")}
             >
               <div className="flex items-center">
@@ -363,9 +360,8 @@ const TopBar: React.FC = () => {
           {/* Help Menu */}
           <div className="relative">
             <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "help" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
+              className={`px-3 py-1.5 text-sm font-medium ${activeMenu === "help" ? "bg-gray-100" : "hover:bg-gray-50"
+                } rounded-md`}
               onClick={() => handleMenuClick("help")}
             >
               <div className="flex items-center">
@@ -381,9 +377,8 @@ const TopBar: React.FC = () => {
           {/* Guidance Menu */}
           <div className="relative">
             <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "guidance" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
+              className={`px-3 py-1.5 text-sm font-medium ${activeMenu === "guidance" ? "bg-gray-100" : "hover:bg-gray-50"
+                } rounded-md`}
               onClick={() => handleMenuClick("guidance")}
             >
               <div className="flex items-center">
@@ -398,8 +393,7 @@ const TopBar: React.FC = () => {
         </div>
       </div>
 
-      {/* User Authentication Section */}
-      <div className="flex items-center">
+      {/* <div className="flex items-center">
         {loading ? (
           <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
         ) : user ? (
@@ -412,7 +406,7 @@ const TopBar: React.FC = () => {
                   width={32}
                   height={32}
                   className="rounded-full"
-                  referrerPolicy="no-referrer" // Penting untuk foto profil Google
+                  referrerPolicy="no-referrer"
                 />
               ) : (
                 <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full">
@@ -424,7 +418,6 @@ const TopBar: React.FC = () => {
               </span>
             </div>
 
-            {/* User Dropdown Menu */}
             <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
               <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
                 {user.email}
@@ -460,7 +453,7 @@ const TopBar: React.FC = () => {
             <span>Sign In</span>
           </button>
         )}
-      </div>
+      </div> */}
     </div>
   );
 };

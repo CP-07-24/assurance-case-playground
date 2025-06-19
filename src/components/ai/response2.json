@@ -1,0 +1,82 @@
+{
+    "success": true,
+    "data": {
+        "response": "Berikut adalah struktur dasar untuk Assurance Case Diagram tentang Autonomous Vehicle yang dapat Anda gunakan sebagai panduan:",
+        "suggestions": [
+            {
+                "element": "Goal",
+                "description": "Autonomous Vehicle operates safely in all driving conditions",
+                "connections": [
+                    "Strategy1",
+                    "Strategy2"
+                ]
+            },
+            {
+                "element": "Strategy1",
+                "description": "Ensure reliable perception system",
+                "connections": [
+                    "SubGoal1",
+                    "SubGoal2"
+                ]
+            },
+            {
+                "element": "SubGoal1",
+                "description": "Object detection accuracy meets safety thresholds",
+                "connections": [
+                    "Evidence1"
+                ]
+            },
+            {
+                "element": "Evidence1",
+                "description": "Test results showing 99.9% detection accuracy in various conditions"
+            },
+            {
+                "element": "SubGoal2",
+                "description": "Sensor redundancy maintains functionality during failures",
+                "connections": [
+                    "Evidence2"
+                ]
+            },
+            {
+                "element": "Evidence2",
+                "description": "FMEA analysis showing backup systems cover all critical failure modes"
+            },
+            {
+                "element": "Strategy2",
+                "description": "Ensure safe decision-making system",
+                "connections": [
+                    "SubGoal3",
+                    "SubGoal4"
+                ]
+            },
+            {
+                "element": "SubGoal3",
+                "description": "Collision avoidance algorithms meet safety standards",
+                "connections": [
+                    "Evidence3"
+                ]
+            },
+            {
+                "element": "Evidence3",
+                "description": "Certification from regulatory body for decision algorithms"
+            },
+            {
+                "element": "SubGoal4",
+                "description": "System responds appropriately to edge cases",
+                "connections": [
+                    "Evidence4"
+                ]
+            },
+            {
+                "element": "Evidence4",
+                "description": "Simulation logs covering 1 million+ edge case scenarios"
+            }
+        ],
+        "notes": [
+            "Diagram ini menggunakan struktur GSN (Goal Structuring Notation) yang umum untuk assurance cases",
+            "Setiap elemen Goal harus didukung oleh Strategy dan bukti konkret",
+            "Anda dapat menambahkan lebih banyak lapisan detail sesuai kebutuhan",
+            "Sertakan referensi ke standar keselamatan yang relevan seperti ISO 26262"
+        ]
+    }
+}

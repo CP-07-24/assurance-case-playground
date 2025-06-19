@@ -175,6 +175,7 @@ const AiPanel: React.FC = () => {
         from: id1,
         to: id2,
         points: [],
+        style: "line"
       });
 
       addConnection({
@@ -182,6 +183,7 @@ const AiPanel: React.FC = () => {
         from: id1,
         to: id3,
         points: [],
+        style: "line"
       });
     }, 100);
   };
@@ -247,6 +249,7 @@ const AiPanel: React.FC = () => {
         from: id1,
         to: id2,
         points: [],
+        style: "line"
       });
 
       addConnection({
@@ -254,6 +257,7 @@ const AiPanel: React.FC = () => {
         from: id2,
         to: id3,
         points: [],
+        style: "line"
       });
 
       addConnection({
@@ -261,6 +265,7 @@ const AiPanel: React.FC = () => {
         from: id2,
         to: id4,
         points: [],
+        style: "line"
       });
     }, 100);
   };
@@ -326,6 +331,7 @@ const AiPanel: React.FC = () => {
         from: id1,
         to: id2,
         points: [],
+        style: "line"
       });
 
       addConnection({
@@ -333,6 +339,7 @@ const AiPanel: React.FC = () => {
         from: id2,
         to: id3,
         points: [],
+        style: "line"
       });
 
       addConnection({
@@ -340,6 +347,7 @@ const AiPanel: React.FC = () => {
         from: id2,
         to: id4,
         points: [],
+        style: "line"
       });
     }, 100);
   };
@@ -405,6 +413,7 @@ const AiPanel: React.FC = () => {
         from: id1,
         to: id2,
         points: [],
+        style: "line"
       });
 
       addConnection({
@@ -412,6 +421,7 @@ const AiPanel: React.FC = () => {
         from: id2,
         to: id3,
         points: [],
+        style: "line"
       });
 
       addConnection({
@@ -419,6 +429,7 @@ const AiPanel: React.FC = () => {
         from: id2,
         to: id4,
         points: [],
+        style: "line"
       });
     }, 100);
   };

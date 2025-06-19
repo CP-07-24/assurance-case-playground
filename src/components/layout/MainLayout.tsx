@@ -6,11 +6,11 @@ import LeftSidebar from './LeftSidebar';
 import RightPanel from './RightPanel';
 import DiagramCanvas from '../canvas/DiagramCanvas';
 import TabsBar from './TabsBar';
-import ExportModal from '../export/export'; // 🔹 Pastikan path-nya sesuai
+// import ExportModal from '../export/export'; // 🔹 Pastikan path-nya sesuai
 
 const MainLayout: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'shapes' | 'ai'>('shapes');
-  const [isExportOpen, setExportOpen] = useState(false); // 🔹 Modal state
+  // const [isExportOpen, setExportOpen] = useState(false); // 🔹 Modal state
 
 
   return (
@@ -51,14 +51,14 @@ const MainLayout: React.FC = () => {
       </div>
 
       {/* Modal export */}
-      <ExportModal isOpen={isExportOpen} onClose={() => setExportOpen(false)} />
+      {/* <ExportModal isOpen={isExportOpen} onClose={() => setExportOpen(false)} />
 
       <button
         onClick={() => setExportOpen(true)}
         data-testid="open-export-modal-button"
       >
         Export Diagram
-      </button>
+      </button> */}
 
     </div>
   );
