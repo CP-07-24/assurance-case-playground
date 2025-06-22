@@ -1,4 +1,4 @@
-"use client"; // Wajib karena menggunakan hooks dan interaktivitas
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { Edit, HelpCircle, Lightbulb, FolderKanban } from "lucide-react";
@@ -12,6 +12,8 @@ import {
 } from "../../lib/firebase/auth";
 import { User } from "firebase/auth";
 import Logo from "../../assets/logoeditor.png";
+// TAMBAH IMPORT INI
+import { GuidanceModal } from "../guidance";
 
 const TopBar: React.FC = () => {
   const {
@@ -33,6 +35,10 @@ const TopBar: React.FC = () => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // TAMBAH STATE INI UNTUK GUIDANCE MODAL
+  const [showGuidanceModal, setShowGuidanceModal] = useState(false);
+  const [guidanceSection, setGuidanceSection] = useState<string>('introduction');
 
   // Pantau perubahan status autentikasi
   useEffect(() => {
@@ -51,6 +57,13 @@ const TopBar: React.FC = () => {
     const baseUrl = currentUrl.split("?")[0];
     // Buka URL dasar di tab baru
     window.open(baseUrl, "_blank");
+  };
+
+  // FUNGSI UNTUK MEMBUKA GUIDANCE MODAL
+  const openGuidanceModal = (section: string = 'introduction') => {
+    setGuidanceSection(section);
+    setShowGuidanceModal(true);
+    setActiveMenu(null); // Tutup dropdown menu
   };
 
   // Handle keyboard shortcuts
@@ -218,20 +231,26 @@ const TopBar: React.FC = () => {
     },
   ];
 
+  // UPDATE GUIDANCE MENU ITEMS UNTUK MEMBUKA MODAL
   const guidanceMenuItems = [
     {
       label: "Getting Started",
-      onClick: () => console.log("Getting Started"),
+      onClick: () => openGuidanceModal('getting-started'),
       shortcut: "",
     },
     {
       label: "Best Practices",
-      onClick: () => console.log("Best Practices"),
+      onClick: () => openGuidanceModal('best-practices'),
       shortcut: "",
     },
     {
       label: "Tips & Tricks",
-      onClick: () => console.log("Tips & Tricks"),
+      onClick: () => openGuidanceModal('tips-tricks'),
+      shortcut: "",
+    },
+    {
+      label: "View All Documentation",
+      onClick: () => openGuidanceModal('introduction'),
       shortcut: "",
     },
   ];
@@ -253,157 +272,166 @@ const TopBar: React.FC = () => {
   };
 
   return (
-    <div
-      className="flex items-center justify-between bg-white border-b border-gray-200 h-12 px-3"
-      data-preserve-selection="true"
-    >
-      <div className="flex items-center">
-        <div
-          className="flex items-center cursor-pointer"
-          onClick={toggleSidebar}
-        >
-          <img src={Logo} alt="Editor Logo" className="h-8 w-auto" />
-        </div>
-
-        <div className="flex ml-6 space-x-1">
-          {/* PROJECT Menu */}
-          <div className="relative">
-            <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "project" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
-              onClick={() => handleMenuClick("project")}
-            >
-              <div className="flex items-center">
-                <FolderKanban size={16} className="mr-1.5" />
-                PROJECT
-              </div>
-            </button>
-            {activeMenu === "project" && (
-              <MenuDropdown items={projectMenuItems} onClose={closeMenu} />
-            )}
-          </div>
-
-          {/* EDIT Menu */}
-          <div className="relative">
-            <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "edit" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
-              onClick={() => handleMenuClick("edit")}
-            >
-              <div className="flex items-center">
-                <Edit size={16} className="mr-1.5" />
-                EDIT
-              </div>
-            </button>
-            {activeMenu === "edit" && (
-              <MenuDropdown items={editMenuItems} onClose={closeMenu} />
-            )}
-          </div>
-
-          {/* DOCUMENTATION Menu */}
-          <div className="relative">
-            <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "help" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
-              onClick={() => handleMenuClick("help")}
-            >
-              <div className="flex items-center">
-                <HelpCircle size={16} className="mr-1.5" />
-                DOCUMENTATION
-              </div>
-            </button>
-            {activeMenu === "help" && (
-              <MenuDropdown items={helpMenuItems} onClose={closeMenu} />
-            )}
-          </div>
-
-          {/* GUIDANCE Menu */}
-          <div className="relative">
-            <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "guidance" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
-              onClick={() => handleMenuClick("guidance")}
-            >
-              <div className="flex items-center">
-                <Lightbulb size={16} className="mr-1.5" />
-                GUIDANCE
-              </div>
-            </button>
-            {activeMenu === "guidance" && (
-              <MenuDropdown items={guidanceMenuItems} onClose={closeMenu} />
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* User Authentication Section */}
-      <div className="flex items-center">
-        {loading ? (
-          <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
-        ) : user ? (
-          <div className="flex items-center gap-2 group relative">
-            <div className="flex items-center gap-2 cursor-pointer">
-              {user.photoURL ? (
-                <img
-                  src={user.photoURL}
-                  alt="User Profile"
-                  width={32}
-                  height={32}
-                  className="rounded-full"
-                  referrerPolicy="no-referrer" // Penting untuk foto profil Google
-                />
-              ) : (
-                <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full">
-                  {user.displayName?.charAt(0).toUpperCase() || "U"}
-                </div>
-              )}
-              <span className="text-sm font-medium hidden md:inline-block">
-                {user.displayName || "User"}
-              </span>
-            </div>
-
-            {/* User Dropdown Menu */}
-            <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-              <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
-                {user.email}
-              </div>
-              <button
-                onClick={() => console.log("Profile Settings")}
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              >
-                Profile Settings
-              </button>
-              <button
-                onClick={() => console.log("Account Preferences")}
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              >
-                Preferences
-              </button>
-              <div className="border-t border-gray-100 mt-1 pt-1">
-                <button
-                  onClick={handleSignOut}
-                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                >
-                  Sign Out
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={signInWithGoogle}
-            className="flex items-center gap-2 bg-white border border-gray-300 rounded-full px-3 py-1 text-sm hover:bg-gray-50 transition-colors"
+    <>
+      <div
+        className="flex items-center justify-between bg-white border-b border-gray-200 h-12 px-3"
+        data-preserve-selection="true"
+      >
+        <div className="flex items-center">
+          <div
+            className="flex items-center cursor-pointer"
+            onClick={toggleSidebar}
           >
-            <FcGoogle size={18} />
-            <span>Sign In</span>
-          </button>
-        )}
+            <img src={Logo} alt="Editor Logo" className="h-8 w-auto" />
+          </div>
+
+          <div className="flex ml-6 space-x-1">
+            {/* PROJECT Menu */}
+            <div className="relative">
+              <button
+                className={`px-3 py-1.5 text-sm font-medium ${
+                  activeMenu === "project" ? "bg-gray-100" : "hover:bg-gray-50"
+                } rounded-md`}
+                onClick={() => handleMenuClick("project")}
+              >
+                <div className="flex items-center">
+                  <FolderKanban size={16} className="mr-1.5" />
+                  PROJECT
+                </div>
+              </button>
+              {activeMenu === "project" && (
+                <MenuDropdown items={projectMenuItems} onClose={closeMenu} />
+              )}
+            </div>
+
+            {/* EDIT Menu */}
+            <div className="relative">
+              <button
+                className={`px-3 py-1.5 text-sm font-medium ${
+                  activeMenu === "edit" ? "bg-gray-100" : "hover:bg-gray-50"
+                } rounded-md`}
+                onClick={() => handleMenuClick("edit")}
+              >
+                <div className="flex items-center">
+                  <Edit size={16} className="mr-1.5" />
+                  EDIT
+                </div>
+              </button>
+              {activeMenu === "edit" && (
+                <MenuDropdown items={editMenuItems} onClose={closeMenu} />
+              )}
+            </div>
+
+            {/* DOCUMENTATION Menu */}
+            <div className="relative">
+              <button
+                className={`px-3 py-1.5 text-sm font-medium ${
+                  activeMenu === "help" ? "bg-gray-100" : "hover:bg-gray-50"
+                } rounded-md`}
+                onClick={() => handleMenuClick("help")}
+              >
+                <div className="flex items-center">
+                  <HelpCircle size={16} className="mr-1.5" />
+                  DOCUMENTATION
+                </div>
+              </button>
+              {activeMenu === "help" && (
+                <MenuDropdown items={helpMenuItems} onClose={closeMenu} />
+              )}
+            </div>
+
+            {/* GUIDANCE Menu */}
+            <div className="relative">
+              <button
+                className={`px-3 py-1.5 text-sm font-medium ${
+                  activeMenu === "guidance" ? "bg-gray-100" : "hover:bg-gray-50"
+                } rounded-md`}
+                onClick={() => handleMenuClick("guidance")}
+              >
+                <div className="flex items-center">
+                  <Lightbulb size={16} className="mr-1.5" />
+                  GUIDANCE
+                </div>
+              </button>
+              {activeMenu === "guidance" && (
+                <MenuDropdown items={guidanceMenuItems} onClose={closeMenu} />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* User Authentication Section */}
+        <div className="flex items-center">
+          {loading ? (
+            <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
+          ) : user ? (
+            <div className="flex items-center gap-2 group relative">
+              <div className="flex items-center gap-2 cursor-pointer">
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt="User Profile"
+                    width={32}
+                    height={32}
+                    className="rounded-full"
+                    referrerPolicy="no-referrer" // Penting untuk foto profil Google
+                  />
+                ) : (
+                  <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full">
+                    {user.displayName?.charAt(0).toUpperCase() || "U"}
+                  </div>
+                )}
+                <span className="text-sm font-medium hidden md:inline-block">
+                  {user.displayName || "User"}
+                </span>
+              </div>
+
+              {/* User Dropdown Menu */}
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
+                  {user.email}
+                </div>
+                <button
+                  onClick={() => console.log("Profile Settings")}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Profile Settings
+                </button>
+                <button
+                  onClick={() => console.log("Account Preferences")}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Preferences
+                </button>
+                <div className="border-t border-gray-100 mt-1 pt-1">
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={signInWithGoogle}
+              className="flex items-center gap-2 bg-white border border-gray-300 rounded-full px-3 py-1 text-sm hover:bg-gray-50 transition-colors"
+            >
+              <FcGoogle size={18} />
+              <span>Sign In</span>
+            </button>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* TAMBAH GUIDANCE MODAL DI SINI */}
+      <GuidanceModal 
+        isOpen={showGuidanceModal} 
+        onClose={() => setShowGuidanceModal(false)}
+        initialSection={guidanceSection}
+      />
+    </>
   );
 };
 
