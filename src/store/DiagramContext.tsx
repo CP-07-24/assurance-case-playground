@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useRef, useState } from "
 import { ShapeOnCanvas, Connection } from "../types/shapes";
 import { importDiagram as importDiagramUtil } from '../components/import/importutils';
 import { exportDiagram as exportDiagramUtil } from '../components/export/exportutils';
+import { getDefaultShapeSize } from "../utils/shapeUtils";
 
 // Tambahkan interface TextElementProps
 export interface TextElementProps {
@@ -135,6 +136,33 @@ const initialState: DiagramState = {
   connectionStartPoint: null,
 };
 
+// Fungsi helper untuk memastikan semua properti yang diperlukan sudah diatur
+const ensureShapeProperties = (shape: ShapeOnCanvas): ShapeOnCanvas => {
+  // Dapatkan ukuran default untuk tipe bentuk ini
+  const defaultSize = getDefaultShapeSize(shape.type);
+
+  // Hitung posisi teks default
+  const calculatedTextY = (shape.height || defaultSize.height) / 2 - 8;
+
+  // Kembalikan bentuk dengan semua properti yang diperlukan
+  return {
+    ...shape,
+    width: shape.width || defaultSize.width,
+    height: shape.height || defaultSize.height,
+    textX: shape.textX !== undefined ? shape.textX : 12,
+    textY: shape.textY !== undefined ? shape.textY : calculatedTextY,
+    fontSize: shape.fontSize || 13,
+    fontSizeId: shape.fontSizeId || 13,
+    // Tambahkan properti default lainnya yang mungkin diperlukan
+    fontFamily: shape.fontFamily || "Arial",
+    fontWeight: shape.fontWeight || "normal",
+    fontStyle: shape.fontStyle || "normal",
+    align: shape.align || "center",
+    textDecoration: shape.textDecoration || "none",
+    interLine: shape.interLine || "normal",
+  };
+};
+
 type DiagramAction =
   | { type: "ADD_SHAPE"; payload: ShapeOnCanvas }
   | { type: "ADD_SHAPES"; payload: ShapeOnCanvas[] }
@@ -201,7 +229,9 @@ const diagramReducer = (
 ): DiagramState => {
   switch (action.type) {
     case "ADD_SHAPE": {
-      const newShapes = [...state.shapes, action.payload];
+      // Gunakan ensureShapeProperties untuk memastikan properti konsisten
+      const completeShape = ensureShapeProperties(action.payload);
+      const newShapes = [...state.shapes, completeShape];
       const newHistory = state.history.slice(0, state.historyIndex + 1);
       newHistory.push({ shapes: newShapes, connections: state.connections });
       return {
@@ -223,12 +253,11 @@ const diagramReducer = (
         // Ini adalah pembaruan untuk shape yang sudah ada
         const newShapes = state.shapes.map((shape) => {
           const updatedShape = action.payload.find((s) => s.id === shape.id);
-          return updatedShape || shape;
+          // Pastikan semua shape memiliki properti yang konsisten
+          return updatedShape ? ensureShapeProperties(updatedShape) : shape;
         });
-
         const newHistory = state.history.slice(0, state.historyIndex + 1);
         newHistory.push({ shapes: newShapes, connections: state.connections });
-
         return {
           ...state,
           shapes: newShapes,
@@ -239,10 +268,13 @@ const diagramReducer = (
         };
       } else {
         // Implementasi asli untuk menambahkan shape baru
-        const newShapes = [...state.shapes, ...action.payload];
+        // Pastikan semua shape baru memiliki properti yang konsisten
+        const newShapes = [
+          ...state.shapes,
+          ...action.payload.map((shape) => ensureShapeProperties(shape)),
+        ];
         const newHistory = state.history.slice(0, state.historyIndex + 1);
         newHistory.push({ shapes: newShapes, connections: state.connections });
-
         return {
           ...state,
           shapes: newShapes,
@@ -383,7 +415,6 @@ const diagramReducer = (
           canRedo: false,
         };
       }
-
       // Untuk koneksi antar shape, periksa duplikat
       const connectionExists = state.connections.some(
         (conn) =>
@@ -391,12 +422,10 @@ const diagramReducer = (
             conn.to === action.payload.to) ||
           (conn.from === action.payload.to && conn.to === action.payload.from)
       );
-
       // If a connection already exists, return the current state without changes
       if (connectionExists) {
         return state;
       }
-
       const newConnections = [...state.connections, action.payload];
       const newHistory = state.history.slice(0, state.historyIndex + 1);
       newHistory.push({ shapes: state.shapes, connections: newConnections });
@@ -442,10 +471,8 @@ const diagramReducer = (
         (conn) => conn.id === connectionId
       );
       if (!connection) return state;
-
       const newConnections = state.connections.map((conn) => {
         if (conn.id !== connectionId) return conn;
-
         const updatedConn = { ...conn } as ConnectionWithPoints;
         if (endpoint === "from") {
           updatedConn.from = shapeId;
@@ -454,13 +481,10 @@ const diagramReducer = (
           updatedConn.to = shapeId;
           updatedConn.toPoint = point;
         }
-
         return updatedConn;
       });
-
       const newHistory = state.history.slice(0, state.historyIndex + 1);
       newHistory.push({ shapes: state.shapes, connections: newConnections });
-
       return {
         ...state,
         connections: newConnections,
@@ -490,12 +514,10 @@ const diagramReducer = (
       const shapeToCopy = state.shapes.find(
         (shape) => shape.id === action.payload
       );
-
       // Get connections for this single shape
       const connectionsToCopy = state.connections.filter(
         (conn) => conn.from === action.payload || conn.to === action.payload
       );
-
       return {
         ...state,
         clipboard: shapeToCopy
@@ -510,13 +532,11 @@ const diagramReducer = (
       const shapesToCopy = state.shapes.filter((shape) =>
         action.payload.includes(shape.id)
       );
-
       // Get connections between the selected shapes
       const connectionsToCopy = state.connections.filter(
         (conn) =>
           action.payload.includes(conn.from) && action.payload.includes(conn.to)
       );
-
       return {
         ...state,
         clipboard:
@@ -530,31 +550,26 @@ const diagramReducer = (
     }
     case "PASTE_SHAPES_AND_CONNECTIONS": {
       if (!state.clipboard || state.clipboard.shapes.length === 0) return state;
-
       const { offsetX, offsetY } = action.payload;
-
       // Calculate the bounding box of clipboard shapes to maintain relative positions
       const minX = Math.min(...state.clipboard.shapes.map((shape) => shape.x));
       const minY = Math.min(...state.clipboard.shapes.map((shape) => shape.y));
-
       // Create mapping from old IDs to new IDs
       const idMapping: { [oldId: string]: string } = {};
-
       // Create new shapes with new IDs
       const newShapes = state.clipboard.shapes.map((shape, index) => {
         const newId = `${shape.type}-${Date.now()}-${Math.random()
           .toString(36)
           .substring(2, 9)}-${index}`;
         idMapping[shape.id] = newId;
-
-        return {
+        // Pastikan shape yang di-paste juga memiliki properti yang konsisten
+        return ensureShapeProperties({
           ...shape,
           id: newId,
           x: shape.x - minX + offsetX,
           y: shape.y - minY + offsetY,
-        };
+        });
       });
-
       // Create new connections with updated IDs
       const newConnections = state.clipboard.connections.map((conn, index) => ({
         ...conn,
@@ -564,13 +579,10 @@ const diagramReducer = (
         from: idMapping[conn.from] || conn.from,
         to: idMapping[conn.to] || conn.to,
       }));
-
       const allShapes = [...state.shapes, ...newShapes];
       const allConnections = [...state.connections, ...newConnections];
-
       const newHistory = state.history.slice(0, state.historyIndex + 1);
       newHistory.push({ shapes: allShapes, connections: allConnections });
-
       return {
         ...state,
         shapes: allShapes,
@@ -753,7 +765,9 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const addShape = (shape: ShapeOnCanvas) => {
-    dispatch({ type: "ADD_SHAPE", payload: shape });
+    // Terapkan properti yang konsisten
+    const completeShape = ensureShapeProperties(shape);
+    dispatch({ type: "ADD_SHAPE", payload: completeShape });
   };
 
   const updateShapePosition = (
@@ -765,13 +779,11 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
       // Temukan shape yang sedang di-drag
       const selectedShape = state.shapes.find((shape) => shape.id === id);
       if (!selectedShape) return;
-
       // Hitung perubahan posisi (delta)
       const deltaX =
         newAttrs.x !== undefined ? newAttrs.x - selectedShape.x : 0;
       const deltaY =
         newAttrs.y !== undefined ? newAttrs.y - selectedShape.y : 0;
-
       // Terapkan delta yang sama ke semua shape yang dipilih
       const updatedShapes = state.shapes.map((shape) => {
         if (state.selectedIds.includes(shape.id)) {
@@ -798,14 +810,12 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
         }
         return shape;
       });
-
       // Perbarui semua shape yang dipilih sekaligus dengan satu tindakan
       const newHistory = state.history.slice(0, state.historyIndex + 1);
       newHistory.push({
         shapes: updatedShapes,
         connections: state.connections,
       });
-
       dispatch({
         type: "ADD_SHAPES",
         payload: updatedShapes.filter((shape) =>
@@ -876,7 +886,6 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const selectedShape =
     state.shapes.find((shape) => shape.id === state.selectedId) || null;
-
   const selectedConnection =
     state.connections.find((conn) => conn.id === state.selectedConnectionId) ||
     null;
@@ -902,10 +911,8 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
         fromPoint: state.connectingFromPoint || "right",
         toPoint: toPoint,
       };
-
       dispatch({ type: "ADD_CONNECTION", payload: connection });
     }
-
     // Reset connection state
     dispatch({ type: "COMPLETE_CONNECTION" });
   };
@@ -968,9 +975,8 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
       state.selectedIds.length > 0
         ? state.selectedIds
         : state.selectedId
-          ? [state.selectedId]
-          : [];
-
+        ? [state.selectedId]
+        : [];
     if (shapesToCopy.length > 0) {
       dispatch({ type: "COPY_SHAPES", payload: shapesToCopy });
     }
@@ -982,13 +988,11 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
       state.selectedIds.length > 0
         ? state.selectedIds
         : state.selectedId
-          ? [state.selectedId]
-          : [];
-
+        ? [state.selectedId]
+        : [];
     if (shapesToCut.length > 0) {
       // First copy the shapes and their connections
       dispatch({ type: "COPY_SHAPES", payload: shapesToCut });
-
       // Then delete them (but not if any are being edited)
       const shapesToDelete = shapesToCut.filter(
         (id) => id !== state.editingShapeId
@@ -1034,13 +1038,11 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
       state.selectedIds.length > 0
         ? state.selectedIds
         : state.selectedId
-          ? [state.selectedId]
-          : [];
-
+        ? [state.selectedId]
+        : [];
     if (shapesToDuplicate.length > 0) {
       // Copy the selected shapes and their connections
       dispatch({ type: "COPY_SHAPES", payload: shapesToDuplicate });
-
       // Immediately paste them with offset
       dispatch({
         type: "PASTE_SHAPES_AND_CONNECTIONS",
@@ -1110,7 +1112,6 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
   // Tambahkan fungsi addTextElement yang sudah diperbaiki
   const addTextElement = (textElement: TextElementProps) => {
     console.log("addTextElement called with:", textElement);
-
     try {
       // Buat shape baru untuk teks sesuai dengan tipe ShapeOnCanvas
       const textShape: ShapeOnCanvas = {
@@ -1132,15 +1133,14 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
         textDecoration: "none",
         interLine: "normal",
       };
-
       console.log("Created text shape:", textShape);
-      // Tambahkan shape ke diagram
-      dispatch({ type: "ADD_SHAPE", payload: textShape });
-
+      // Tambahkan shape ke diagram dengan memastikan semua properti
+      const completeTextShape = ensureShapeProperties(textShape);
+      dispatch({ type: "ADD_SHAPE", payload: completeTextShape });
       // Jika editable, set shape ini sebagai selected
       if (textElement.editable) {
-        dispatch({ type: "SET_SELECTED", payload: textShape.id });
-        setEditingShape(textShape.id);
+        dispatch({ type: "SET_SELECTED", payload: completeTextShape.id });
+        setEditingShape(completeTextShape.id);
       }
     } catch (error) {
       console.error("Error adding text element:", error);

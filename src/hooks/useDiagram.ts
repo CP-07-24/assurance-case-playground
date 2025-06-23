@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useDiagramContext } from "../store/DiagramContext";
 import { Shape, ShapeOnCanvas } from "../types/shapes";
+import { getDefaultShapeSize } from "../utils/shapeUtils";
 
 export const useDiagram = () => {
   const {
@@ -201,13 +202,22 @@ export const useDiagram = () => {
   ]);
 
   const addShapeToCanvas = (shape: Shape) => {
+    // Dapatkan ukuran default berdasarkan tipe shape
+    const defaultSize = getDefaultShapeSize(shape.type);
+
+    const calculatedTextY = defaultSize.height / 2 - 8; // Posisi Y default untuk teks
+
     const newShape: ShapeOnCanvas = {
       ...shape,
       id: Date.now().toString(),
       x: 100,
       y: 100,
-      width: 100,
-      height: 50,
+      width: defaultSize.width, // Gunakan width dari defaultSize
+      height: defaultSize.height, // Gunakan height dari defaultSize
+      textX: 12, // Margin dari kiri
+      textY: calculatedTextY, // Posisi vertikal yang tepat
+      fontSize: 13, // Ukuran font default untuk teks utama
+      fontSizeId: 13, // Ukuran font default untuk ID
     };
     addShape(newShape);
     setSelectedId(newShape.id);

@@ -64,14 +64,88 @@ const Connection: React.FC<ConnectionProps> = ({ connection }) => {
   const toPoint = (connection as any).toPoint || "left";
 
   // Calculate connection points untuk koneksi antar shape
+  // Di dalam komponen Connection - modifikasi fungsi calculateShapeConnectionPoint
   const calculateShapeConnectionPoint = (
     shape: any,
     connectionPoint: string
   ) => {
     if (!shape) return [0, 0];
 
-    const shapeWidth = shape.width || 100;
-    const shapeHeight = shape.height || 50;
+    // Tentukan ukuran default berdasarkan tipe shape
+    let defaultWidth = 150;
+    let defaultHeight = 80;
+
+    // Tentukan ukuran default yang spesifik berdasarkan tipe
+    switch (shape.type) {
+      // Shapes persegi yang lebih lebar
+      case "goal1":
+      case "goal2":
+      case "goal5":
+      case "goal6":
+      case "sacm1":
+      case "sacm2":
+      case "sacm6":
+      case "sacmExt5":
+      case "sacmExt6":
+      case "sacmExt7":
+      case "sacmExt8":
+      case "sacmExt10":
+        defaultWidth = 160;
+        defaultHeight = 80;
+        break;
+
+      // Shapes persegi dengan ukuran lebih besar
+      case "goal8":
+      case "extension4":
+      case "extension3":
+        defaultWidth = 180;
+        defaultHeight = 100;
+        break;
+
+      // Shapes lingkaran atau oval
+      case "goal3":
+      case "sacm3":
+      case "sacmExt9":
+        defaultWidth = 100;
+        defaultHeight = 100;
+        break;
+
+      case "extension2":
+        defaultWidth = 130;
+        defaultHeight = 130;
+        break;
+
+      // Shapes yang umumnya kecil
+      case "goal7":
+      case "extension1":
+        defaultWidth = 150;
+        defaultHeight = 85;
+        break;
+
+      // Shapes yang perlu space horizontal lebih banyak
+      case "goal4":
+        defaultWidth = 200;
+        defaultHeight = 80;
+        break;
+
+      // Shapes kompleks untuk diagram SACM
+      case "sacmExt1":
+      case "sacmExt2":
+      case "sacmExt3":
+      case "sacmExt4":
+        defaultWidth = 150;
+        defaultHeight = 100;
+        break;
+
+      // Default untuk tipe lainnya
+      default:
+        defaultWidth = 150;
+        defaultHeight = 80;
+    }
+
+    // Gunakan ukuran shape jika ada, atau ukuran default berdasarkan tipe
+    const shapeWidth = shape.width || defaultWidth;
+    const shapeHeight = shape.height || defaultHeight;
 
     // Hitung titik koneksi yang tepat pada tepi bentuk
     switch (connectionPoint) {
