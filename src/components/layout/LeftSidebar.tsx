@@ -8,7 +8,7 @@ import {
   sacmElements,
   sacmExtensionElements,
 } from "../../data/shapeData";
-import LoginPanel from "../ai/LoginPanel";
+import TokenPanel from "../ai/TokenPanel";
 import { useAuth } from "../../context/AuthContext";
 
 interface LeftSidebarProps {
@@ -45,7 +45,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ activeTab }) => {
   }, [searchText]);
 
   if (activeTab === "ai") {
-    return isAuthenticated ? <AiPanel /> : <LoginPanel onSuccess={() => {}} />;
+    return isAuthenticated ? <AiPanel /> : <TokenPanel onSuccess={() => {}} />;
   }
 
   return (
