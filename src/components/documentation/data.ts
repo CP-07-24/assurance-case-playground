@@ -1,7 +1,7 @@
 import { FileText, Shapes, HelpCircle, Lightbulb, Play } from 'lucide-react';
-import { NavigationItem, GuidanceContent } from './types';
+import { NavigationItem, DocumentationContent } from './types';
 
-export const guidanceData: Record<string, GuidanceContent> = {
+export const documentationData: Record<string, DocumentationContent> = {
   'introduction': {
     title: 'Introduction of GSN',
     content: `

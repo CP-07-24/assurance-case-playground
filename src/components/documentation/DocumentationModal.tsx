@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { GuidanceModalProps } from './types';
-import { guidanceData, navigationStructure } from './data';
-import GuidanceNavigation from './GuidanceNavigation';
-import GuidanceContent from './GuidanceContent';
-import GuidanceFooter from './GuidanceFooter';
+import { DocumentationModalProps } from './types';
+import { documentationData, navigationStructure } from './data';
+import GuidanceNavigation from './DocumentationNavigation';
+import DocumentationContent from './DocumentationContent';
+import DocumentationFooter from './DocumentationFooter';
 
-const GuidanceModal: React.FC<GuidanceModalProps> = ({ 
+const DocumentationModal: React.FC<DocumentationModalProps> = ({ 
   isOpen, 
   onClose, 
   initialSection = 'introduction' 
@@ -22,7 +22,7 @@ const GuidanceModal: React.FC<GuidanceModalProps> = ({
 
   if (!isOpen) return null;
 
-  const currentContent = guidanceData[activeSection];
+  const currentContent = documentationData[activeSection];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -58,14 +58,14 @@ const GuidanceModal: React.FC<GuidanceModalProps> = ({
           </div>
 
           {/* Content */}
-          <GuidanceContent content={currentContent?.content || ''} />
+          <DocumentationContent content={currentContent?.content || ''} />
 
           {/* Footer */}
-          <GuidanceFooter />
+          <DocumentationFooter />
         </div>
       </div>
     </div>
   );
 };
 
-export default GuidanceModal;
+export default DocumentationModal;

@@ -1,7 +1,7 @@
 import React from 'react';
-import { GuidanceContentProps } from './types';
+import { DocumentationContentProps } from './types';
 
-const GuidanceContent: React.FC<GuidanceContentProps> = ({ content }) => {
+const DocumentationContent: React.FC<DocumentationContentProps> = ({ content }) => {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="p-6">
@@ -17,4 +17,4 @@ const GuidanceContent: React.FC<GuidanceContentProps> = ({ content }) => {
   );
 };
 
-export default GuidanceContent;
+export default DocumentationContent;

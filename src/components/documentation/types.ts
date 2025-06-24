@@ -1,4 +1,4 @@
-export interface GuidanceModalProps {
+export interface DocumentationModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialSection?: string;
@@ -6,7 +6,7 @@ export interface GuidanceModalProps {
 
 import { LucideIcon } from 'lucide-react';
 
-export interface GuidanceModalProps {
+export interface DocumentationModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
@@ -18,12 +18,12 @@ export interface NavigationItem {
   children?: NavigationItem[];
 }
 
-export interface GuidanceContent {
+export interface DocumentationContent {
   title: string;
   content: string;
 }
 
-export interface GuidanceNavigationProps {
+export interface DocumentationNavigationProps {
   navigationStructure: NavigationItem[];
   activeSection: string;
   expandedItems: string[];
@@ -31,11 +31,11 @@ export interface GuidanceNavigationProps {
   onToggleExpanded: (itemId: string) => void;
 }
 
-export interface GuidanceContentProps {
+export interface DocumentationContentProps {
   content: string;
 }
 
-export interface GuidanceFooterProps {
+export interface DocumentationFooterProps {
   onNext?: () => void;
   onPrevious?: () => void;
   showNavigation?: boolean;

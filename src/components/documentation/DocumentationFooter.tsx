@@ -1,8 +1,8 @@
 import React from 'react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
-import { GuidanceFooterProps } from './types';
+import { DocumentationFooterProps } from './types';
 
-const GuidanceFooter: React.FC<GuidanceFooterProps> = ({ 
+const DocumentationFooter: React.FC<DocumentationFooterProps> = ({ 
   onNext, 
   onPrevious, 
   showNavigation = true 
@@ -32,4 +32,4 @@ const GuidanceFooter: React.FC<GuidanceFooterProps> = ({
   );
 };
 
-export default GuidanceFooter;
+export default DocumentationFooter;

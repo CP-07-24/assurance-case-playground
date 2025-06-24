@@ -1,7 +1,7 @@
-"use client";
+"use client"; // Wajib karena menggunakan hooks dan interaktivitas
 
 import React, { useState, useEffect } from "react";
-import { Edit, HelpCircle, Lightbulb, FolderKanban } from "lucide-react";
+import { Edit, HelpCircle, FolderKanban } from "lucide-react";
 import { useDiagramContext } from "../../store/DiagramContext";
 import MenuDropdown from "../ui/MenuDropdown";
 import { FcGoogle } from "react-icons/fc";
@@ -12,8 +12,8 @@ import {
 } from "../../lib/firebase/auth";
 import { User } from "firebase/auth";
 import Logo from "../../assets/logoeditor.png";
-// TAMBAH IMPORT INI
-import { GuidanceModal } from "../guidance";
+// IMPORT DOCUMENTATION MODAL
+import { GuidanceModal } from "../documentation";
 
 const TopBar: React.FC = () => {
   const {
@@ -36,9 +36,9 @@ const TopBar: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // TAMBAH STATE INI UNTUK GUIDANCE MODAL
-  const [showGuidanceModal, setShowGuidanceModal] = useState(false);
-  const [guidanceSection, setGuidanceSection] = useState<string>('introduction');
+  // STATE UNTUK DOCUMENTATION MODAL
+  const [showDocumentationModal, setShowDocumentationModal] = useState(false);
+  const [documentationSection, setDocumentationSection] = useState<string>('introduction');
 
   // Pantau perubahan status autentikasi
   useEffect(() => {
@@ -51,25 +51,21 @@ const TopBar: React.FC = () => {
 
   // Fungsi untuk membuka project baru di tab baru
   const openNewProject = () => {
-    // Mendapatkan URL saat ini
     const currentUrl = window.location.href;
-    // Mendapatkan URL dasar (tanpa parameter query jika ada)
     const baseUrl = currentUrl.split("?")[0];
-    // Buka URL dasar di tab baru
     window.open(baseUrl, "_blank");
   };
 
-  // FUNGSI UNTUK MEMBUKA GUIDANCE MODAL
-  const openGuidanceModal = (section: string = 'introduction') => {
-    setGuidanceSection(section);
-    setShowGuidanceModal(true);
+  // FUNGSI UNTUK MEMBUKA DOCUMENTATION MODAL
+  const openDocumentationModal = (section: string = 'introduction') => {
+    setDocumentationSection(section);
+    setShowDocumentationModal(true);
     setActiveMenu(null); // Tutup dropdown menu
   };
 
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Check if we're in an input field
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement
@@ -105,21 +101,17 @@ const TopBar: React.FC = () => {
             break;
           case "d":
             e.preventDefault();
-            // Duplicate functionality (copy then paste with offset)
             copyShape();
             setTimeout(() => pasteShape(30, 30), 10);
             break;
           case "x":
             e.preventDefault();
-            // Cut functionality (copy then delete)
             copyShape();
             deleteSelectedShapes();
             break;
         }
       }
-      // Delete key for deleting selected shapes
       if (e.key === "Delete" || e.key === "Backspace") {
-        // Hanya jika tidak ada input yang difokuskan
         if (
           !(
             e.target instanceof HTMLInputElement ||
@@ -208,49 +200,31 @@ const TopBar: React.FC = () => {
     },
   ];
 
-  const helpMenuItems = [
+  // DOCUMENTATION MENU ITEMS
+  const documentationMenuItems = [
     {
-      label: "Keyboard Shortcuts",
-      onClick: () => console.log("Keyboard Shortcuts"),
+      label: "Introduction of GSN",
+      onClick: () => openDocumentationModal('introduction'),
       shortcut: "",
     },
-    {
-      label: "User Guide",
-      onClick: () => console.log("User Guide"),
-      shortcut: "",
-    },
-    {
-      label: "Report Bug",
-      onClick: () => console.log("Report Bug"),
-      shortcut: "",
-    },
-    {
-      label: "Contact Support",
-      onClick: () => console.log("Contact Support"),
-      shortcut: "",
-    },
-  ];
-
-  // UPDATE GUIDANCE MENU ITEMS UNTUK MEMBUKA MODAL
-  const guidanceMenuItems = [
     {
       label: "Getting Started",
-      onClick: () => openGuidanceModal('getting-started'),
+      onClick: () => openDocumentationModal('getting-started'),
+      shortcut: "",
+    },
+    {
+      label: "GSN Elements",
+      onClick: () => openDocumentationModal('gsn-elements'),
       shortcut: "",
     },
     {
       label: "Best Practices",
-      onClick: () => openGuidanceModal('best-practices'),
+      onClick: () => openDocumentationModal('best-practices'),
       shortcut: "",
     },
     {
       label: "Tips & Tricks",
-      onClick: () => openGuidanceModal('tips-tricks'),
-      shortcut: "",
-    },
-    {
-      label: "View All Documentation",
-      onClick: () => openGuidanceModal('introduction'),
+      onClick: () => openDocumentationModal('tips-tricks'),
       shortcut: "",
     },
   ];
@@ -326,35 +300,17 @@ const TopBar: React.FC = () => {
             <div className="relative">
               <button
                 className={`px-3 py-1.5 text-sm font-medium ${
-                  activeMenu === "help" ? "bg-gray-100" : "hover:bg-gray-50"
+                  activeMenu === "documentation" ? "bg-gray-100" : "hover:bg-gray-50"
                 } rounded-md`}
-                onClick={() => handleMenuClick("help")}
+                onClick={() => handleMenuClick("documentation")}
               >
                 <div className="flex items-center">
                   <HelpCircle size={16} className="mr-1.5" />
                   DOCUMENTATION
                 </div>
               </button>
-              {activeMenu === "help" && (
-                <MenuDropdown items={helpMenuItems} onClose={closeMenu} />
-              )}
-            </div>
-
-            {/* GUIDANCE Menu */}
-            <div className="relative">
-              <button
-                className={`px-3 py-1.5 text-sm font-medium ${
-                  activeMenu === "guidance" ? "bg-gray-100" : "hover:bg-gray-50"
-                } rounded-md`}
-                onClick={() => handleMenuClick("guidance")}
-              >
-                <div className="flex items-center">
-                  <Lightbulb size={16} className="mr-1.5" />
-                  GUIDANCE
-                </div>
-              </button>
-              {activeMenu === "guidance" && (
-                <MenuDropdown items={guidanceMenuItems} onClose={closeMenu} />
+              {activeMenu === "documentation" && (
+                <MenuDropdown items={documentationMenuItems} onClose={closeMenu} />
               )}
             </div>
           </div>
@@ -374,7 +330,7 @@ const TopBar: React.FC = () => {
                     width={32}
                     height={32}
                     className="rounded-full"
-                    referrerPolicy="no-referrer" // Penting untuk foto profil Google
+                    referrerPolicy="no-referrer"
                   />
                 ) : (
                   <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full">
@@ -425,11 +381,11 @@ const TopBar: React.FC = () => {
         </div>
       </div>
 
-      {/* TAMBAH GUIDANCE MODAL DI SINI */}
+      {/* DOCUMENTATION MODAL */}
       <GuidanceModal 
-        isOpen={showGuidanceModal} 
-        onClose={() => setShowGuidanceModal(false)}
-        initialSection={guidanceSection}
+        isOpen={showDocumentationModal} 
+        onClose={() => setShowDocumentationModal(false)}
+        initialSection={documentationSection}
       />
     </>
   );

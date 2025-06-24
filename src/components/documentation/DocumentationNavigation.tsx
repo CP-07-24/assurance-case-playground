@@ -1,8 +1,8 @@
 import React from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
-import { GuidanceNavigationProps, NavigationItem } from './types';
+import { DocumentationNavigationProps, NavigationItem } from './types';
 
-const GuidanceNavigation: React.FC<GuidanceNavigationProps> = ({
+const DocumentationNavigation: React.FC<DocumentationNavigationProps> = ({
   navigationStructure,
   activeSection,
   expandedItems,
@@ -64,4 +64,4 @@ const GuidanceNavigation: React.FC<GuidanceNavigationProps> = ({
   );
 };
 
-export default GuidanceNavigation;
+export default DocumentationNavigation;
