@@ -6,6 +6,7 @@ import SVGImage from "./SvgImage";
 import { KonvaEventObject } from "konva/lib/Node";
 import Konva from "konva";
 import { getDefaultShapeSize } from "../../utils/shapeUtils";
+import { getTextPositionsForShape } from "../../utils/textPositionUtils";
 
 interface DiagramShapeProps {
   shape: ShapeOnCanvas;
@@ -86,15 +87,44 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
     return Math.min(5, Math.max(3, baseDimension * 0.05));
   };
 
-  // Fungsi untuk mendapatkan ukuran font yang proporsional
-  const getProportionalFontSize = (baseFontSize: number) => {
-    // Membuat ukuran font proporsional tapi dengan batas maksimum dan minimum
-    const baseDimension = Math.min(shape.width || 100, shape.height || 50);
-    const scaleFactor = baseDimension / 100; // 100 adalah ukuran shape default
-    return Math.min(16, Math.max(10, baseFontSize * scaleFactor));
+  // Fungsi untuk mendapatkan ukuran font yang konsisten dan lebih stabil
+  const getConsistentFontSize = (
+    baseFontSize: number,
+    fontType: "id" | "main" | "text" = "main"
+  ) => {
+    // Definisikan ukuran font standar berdasarkan tipe
+    const standardSizes = {
+      id: 12, // Ukuran ID tetap
+      main: 13, // Ukuran teks utama
+      text: 14, // Ukuran teks biasa
+    };
+
+    // Ambil ukuran standar berdasarkan tipe
+    const standardSize = standardSizes[fontType];
+
+    // Jika ada custom font size dari shape, gunakan itu tapi tetap dalam range yang wajar
+    if (baseFontSize && baseFontSize !== standardSize) {
+      return Math.min(18, Math.max(10, baseFontSize));
+    }
+
+    // Untuk shape yang sangat kecil, gunakan font size yang lebih kecil
+    const shapeArea = (shape.width || 100) * (shape.height || 50);
+    const normalArea = 100 * 50; // Area normal reference
+
+    if (shapeArea < normalArea * 0.5) {
+      // Shape kecil - kurangi font size sedikit
+      return Math.max(10, standardSize - 2);
+    } else if (shapeArea > normalArea * 2) {
+      // Shape besar - tambah font size sedikit
+      return Math.min(16, standardSize + 1);
+    }
+
+    // Ukuran normal
+    return standardSize;
   };
 
   // Fungsi untuk mendapatkan semua shape yang dipilih
+  // (Posisi text sekarang otomatis, tidak perlu property manual mainTextX/mainTextY/idTextX/idTextY)
   const getSelectedShapes = (): Konva.Node[] => {
     const stage = shapeRef.current?.getStage();
     if (!stage) return [];
@@ -250,15 +280,10 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
         return "A";
       case "goal6":
         return "J";
-      case "goal7":
       case "goal8":
         return "U";
       case "sacm6":
         return "AR";
-      case "sacmExt1":
-        return "AC";
-      case "sacmExt2":
-        return "APB";
       default:
         return "";
     }
@@ -306,6 +331,14 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
 
   // Gunakan fungsi helper ini di dalam komponen DiagramShape
   const defaultSize = getDefaultShapeSize(shape.type);
+
+  // Dapatkan posisi ideal untuk main text dan id text
+  const { mainTextX, mainTextY, idTextX, idTextY, mainTextOffsetX } =
+    getTextPositionsForShape(
+      shape.type,
+      shape.width || defaultSize.width,
+      shape.height || defaultSize.height
+    );
 
   // Fungsi untuk menghasilkan string SVG dari properti shape
   const getSvgString = () => {
@@ -1192,9 +1225,11 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
 
     return svgContent;
   };
-  // Mendapatkan ukuran font yang sesuai
-  const idFontSize = getProportionalFontSize(shape.fontSizeId || 13);
-  const mainFontSize = getProportionalFontSize(shape.fontSize || 13);
+
+  // Mendapatkan ukuran font yang sesuai dengan fungsi yang lebih konsisten
+  const idFontSize = getConsistentFontSize(shape.fontSizeId || 12, "id");
+  const mainFontSize = getConsistentFontSize(shape.fontSize || 13, "main");
+  const textFontSize = getConsistentFontSize(shape.fontSize || 14, "text");
   const connectorRadius = getConnectorRadius();
 
   // Render connector dengan efek visual yang lebih baik
@@ -1260,7 +1295,7 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
           height={shape.height || defaultSize.height}
         />
 
-        {/* Render teks dengan ukuran yang proporsional */}
+        {/* Render teks dengan ukuran yang konsisten */}
         {shape.type === "text" ? (
           <Text
             ref={textRef}
@@ -1269,7 +1304,7 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
             y={0}
             width={shape.width || 100}
             height={shape.height || 40}
-            fontSize={shape.fontSize || 14}
+            fontSize={textFontSize}
             fontFamily={shape.fontFamily || "Arial"}
             fontStyle={(() => {
               if (shape.fontWeight === "bold" && shape.fontStyle === "italic")
@@ -1287,11 +1322,11 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
           />
         ) : (
           <>
-            {/* ID Text with proportional font size */}
+            {/* ID Text dengan ukuran font yang konsisten */}
             <Text
               text={`${getDefaultPrefix()}${shape.idText || ""}`}
-              x={15}
-              y={15}
+              x={idTextX}
+              y={idTextY}
               fontSize={idFontSize}
               fontFamily="Arial, sans-serif"
               fill="#333"
@@ -1299,18 +1334,20 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
               letterSpacing={getLetterSpacing(shape.interLine)}
             />
 
-            {/* Main text with proportional font size */}
+            {/* Main text dengan ukuran font yang konsisten */}
             <Text
               ref={textRef}
-              text={shape.value || shape.text || shape.title || ""}
-              x={shape.width ? shape.width / 1.68 : defaultSize.width / 2} // Posisi tengah horizontal
-              y={shape.height ? shape.height / 4 : defaultSize.height / 2} // Posisi tengah vertikal
+              text={shape.mainText || ""}
+              x={mainTextX}
+              y={mainTextY}
               width={(shape.width || defaultSize.width) - 24}
               height={Math.max(20, (shape.height || defaultSize.height) - 40)}
               align="center"
               verticalAlign="middle"
-              offsetX={(shape.width || defaultSize.width - 24) / 2} // Penting untuk mengatur posisi teks dari tengah
-              offsetY={0} // Offset vertikal jika diperlukan
+              offsetX={
+                mainTextOffsetX || ((shape.width || defaultSize.width) - 24) / 2
+              }
+              offsetY={0}
               fontSize={mainFontSize}
               fontFamily="Arial, sans-serif"
               fontStyle={shape.descFontWeight === "bold" ? "bold" : "normal"}
@@ -1331,7 +1368,7 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
             x={12}
             y={shape.textY || 30}
             width={(shape.width || 100) - 24}
-            fontSize={getProportionalFontSize(shape.fontSize || 12)}
+            fontSize={getConsistentFontSize(shape.fontSize || 12, "main")}
             fontFamily="Arial, sans-serif"
             fill="#333"
             lineHeight={1.3}

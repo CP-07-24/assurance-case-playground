@@ -32,7 +32,7 @@ export const getDefaultShapeSize = (shapeType: string) => {
 
     case "goal7":
     case "extension1":
-      return { width: 150, height: 85 };
+      return { width: 50, height: 50 };
     // Shapes yang perlu space horizontal lebih banyak
     case "goal4":
       return { width: 200, height: 80 };
@@ -41,7 +41,7 @@ export const getDefaultShapeSize = (shapeType: string) => {
     case "sacmExt2":
     case "sacmExt3":
     case "sacmExt4":
-      return { width: 150, height: 100 };
+      return { width: 180, height: 100 };
     // Text shape mungkin perlu lebih fleksibel
     case "text":
       return { width: 150, height: 60 };

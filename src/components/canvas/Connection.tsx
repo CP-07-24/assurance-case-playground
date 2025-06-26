@@ -133,7 +133,7 @@ const Connection: React.FC<ConnectionProps> = ({ connection }) => {
       case "sacmExt2":
       case "sacmExt3":
       case "sacmExt4":
-        defaultWidth = 150;
+        defaultWidth = 180;
         defaultHeight = 100;
         break;
 

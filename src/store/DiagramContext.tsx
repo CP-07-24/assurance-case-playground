@@ -877,7 +877,7 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
         from: state.connectingFromId,
         to: toId,
         points: [],
-        style: "line",
+        style: "solidArrow",
         fromPoint: state.connectingFromPoint || "right",
         toPoint: toPoint,
       };
@@ -1057,6 +1057,7 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
         id: `text-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         type: "text",
         title: "Text", // Properti wajib dari Shape
+        mainText: "",
         preview: <div>Text</div>, // Properti wajib dari Shape
         x: textElement.x,
         y: textElement.y,
