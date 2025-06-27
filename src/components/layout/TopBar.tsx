@@ -1,7 +1,7 @@
 "use client"; // Wajib karena menggunakan hooks dan interaktivitas
 
 import React, { useState, useEffect } from "react";
-import { Edit, HelpCircle, FolderKanban } from "lucide-react";
+import { Edit, HelpCircle, Lightbulb, FolderKanban } from "lucide-react";
 import { useDiagramContext } from "../../store/DiagramContext";
 import MenuDropdown from "../ui/MenuDropdown";
 import { FcGoogle } from "react-icons/fc";
@@ -12,8 +12,12 @@ import {
 } from "../../lib/firebase/auth";
 import { User } from "firebase/auth";
 import Logo from "../../assets/logoeditor.png";
+
 // IMPORT DOCUMENTATION MODAL
 import { GuidanceModal } from "../documentation";
+
+// IMPORT GUIDANCE DIALOG (dari habli-guidance branch)
+import GuidanceDialog from "../dialogs/GuidanceDialog";
 
 const TopBar: React.FC = () => {
   const {
@@ -40,6 +44,9 @@ const TopBar: React.FC = () => {
   const [showDocumentationModal, setShowDocumentationModal] = useState(false);
   const [documentationSection, setDocumentationSection] = useState<string>('introduction');
 
+  // STATE UNTUK GUIDANCE DIALOG (dari habli-guidance branch)
+  const [isGuidanceDialogOpen, setIsGuidanceDialogOpen] = useState(false);
+
   // Pantau perubahan status autentikasi
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -52,7 +59,7 @@ const TopBar: React.FC = () => {
   // Fungsi untuk membuka project baru di tab baru
   const openNewProject = () => {
     const currentUrl = window.location.href;
-    const baseUrl = currentUrl.split("?")[0];
+    const baseUrl = currentUrl.split("?")[0].split("#")[0];
     window.open(baseUrl, "_blank");
   };
 
@@ -61,6 +68,12 @@ const TopBar: React.FC = () => {
     setDocumentationSection(section);
     setShowDocumentationModal(true);
     setActiveMenu(null); // Tutup dropdown menu
+  };
+
+  // FUNGSI UNTUK MEMBUKA GUIDANCE DIALOG (dari habli-guidance branch)
+  const handleGuidanceClick = () => {
+    setActiveMenu(null); // Tutup dropdown menu
+    setIsGuidanceDialogOpen(true);
   };
 
   // Handle keyboard shortcuts
@@ -200,8 +213,8 @@ const TopBar: React.FC = () => {
     },
   ];
 
-  // DOCUMENTATION MENU ITEMS
-  const documentationMenuItems = [
+  // DOCUMENTATION/HELP MENU ITEMS (digabung dari kedua branch)
+  const helpMenuItems = [
     {
       label: "Introduction of GSN",
       onClick: () => openDocumentationModal('introduction'),
@@ -296,22 +309,35 @@ const TopBar: React.FC = () => {
               )}
             </div>
 
-            {/* DOCUMENTATION Menu */}
+            {/* HELP/DOCUMENTATION Menu (digabung dari kedua branch) */}
             <div className="relative">
               <button
                 className={`px-3 py-1.5 text-sm font-medium ${
-                  activeMenu === "documentation" ? "bg-gray-100" : "hover:bg-gray-50"
+                  activeMenu === "help" ? "bg-gray-100" : "hover:bg-gray-50"
                 } rounded-md`}
-                onClick={() => handleMenuClick("documentation")}
+                onClick={() => handleMenuClick("help")}
               >
                 <div className="flex items-center">
                   <HelpCircle size={16} className="mr-1.5" />
                   DOCUMENTATION
                 </div>
               </button>
-              {activeMenu === "documentation" && (
-                <MenuDropdown items={documentationMenuItems} onClose={closeMenu} />
+              {activeMenu === "help" && (
+                <MenuDropdown items={helpMenuItems} onClose={closeMenu} />
               )}
+            </div>
+
+            {/* GUIDANCE Button (dari habli-guidance branch) */}
+            <div className="relative">
+              <button
+                className="px-3 py-1.5 text-sm font-medium hover:bg-gray-50 rounded-md"
+                onClick={handleGuidanceClick}
+              >
+                <div className="flex items-center">
+                  <Lightbulb size={16} className="mr-1.5" />
+                  GUIDANCE
+                </div>
+              </button>
             </div>
           </div>
         </div>
@@ -386,6 +412,12 @@ const TopBar: React.FC = () => {
         isOpen={showDocumentationModal} 
         onClose={() => setShowDocumentationModal(false)}
         initialSection={documentationSection}
+      />
+
+      {/* GUIDANCE DIALOG (dari habli-guidance branch) */}
+      <GuidanceDialog
+        isOpen={isGuidanceDialogOpen}
+        onClose={() => setIsGuidanceDialogOpen(false)}
       />
     </>
   );
