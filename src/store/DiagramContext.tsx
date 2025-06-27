@@ -1,7 +1,5 @@
-import React, { createContext, useContext, useReducer, useRef, useState } from "react";
+import React, { createContext, useContext, useReducer, useState } from "react";
 import { ShapeOnCanvas, Connection } from "../types/shapes";
-import { importDiagram as importDiagramUtil } from '../components/import/importutils';
-import { exportDiagram as exportDiagramUtil } from '../components/export/exportutils';
 import { getDefaultShapeSize } from "../utils/shapeUtils";
 
 // Tambahkan interface TextElementProps
@@ -113,10 +111,6 @@ interface DiagramContextType extends DiagramState {
     shapeId: string,
     point: string
   ) => void;
-  exportDiagram: (format: string) => Promise<void>;
-  importDiagram: (content: string, format: 'json' | 'xml') => void;
-  stageRef: React.RefObject<any>;
-  setStageRef: (ref: React.RefObject<any>) => void;
 }
 
 // initialState hanya berisi properti data yang sesuai dengan DiagramState
@@ -174,9 +168,9 @@ type DiagramAction =
   | { type: "ADD_SHAPE"; payload: ShapeOnCanvas }
   | { type: "ADD_SHAPES"; payload: ShapeOnCanvas[] }
   | {
-    type: "UPDATE_SHAPE";
-    payload: { id: string; attrs: Partial<ShapeOnCanvas> };
-  }
+      type: "UPDATE_SHAPE";
+      payload: { id: string; attrs: Partial<ShapeOnCanvas> };
+    }
   | { type: "SET_SELECTED"; payload: string | null }
   | { type: "SET_SELECTED_CONNECTION"; payload: string | null }
   | { type: "DELETE_SHAPE"; payload: string }
@@ -191,24 +185,24 @@ type DiagramAction =
   | { type: "CANCEL_CONNECTION" }
   | { type: "ADD_CONNECTION"; payload: Connection | ConnectionWithPoints }
   | {
-    type: "UPDATE_CONNECTION";
-    payload: {
-      id: string;
-      points: number[];
-      style: Connection["style"];
-      from?: string;
-      to?: string;
-      fromPoint?: string;
-      toPoint?: string;
-    };
-  }
+      type: "UPDATE_CONNECTION";
+      payload: {
+        id: string;
+        points: number[];
+        style: Connection["style"];
+        from?: string;
+        to?: string;
+        fromPoint?: string;
+        toPoint?: string;
+      };
+    }
   | { type: "DELETE_CONNECTION"; payload: string }
   | { type: "COPY_SHAPE"; payload: string }
   | { type: "COPY_SHAPES"; payload: string[] }
   | {
-    type: "PASTE_SHAPES_AND_CONNECTIONS";
-    payload: { offsetX: number; offsetY: number };
-  }
+      type: "PASTE_SHAPES_AND_CONNECTIONS";
+      payload: { offsetX: number; offsetY: number };
+    }
   | { type: "SELECT_ALL" }
   | { type: "CLEAR_SELECTION" }
   | { type: "TOGGLE_SHAPE_SELECTION"; payload: string }
@@ -219,16 +213,15 @@ type DiagramAction =
   | { type: "SET_CONNECTION_START_POINT"; payload: { x: number; y: number } }
   | { type: "COMPLETE_DRAWING_CONNECTION" }
   | { type: "CANCEL_DRAWING_CONNECTION" }
-  | { type: "SET_DIAGRAM"; payload: { shapes: ShapeOnCanvas[]; connections: Connection[] } }
   | {
-    type: "CONVERT_CONNECTION_ENDPOINT";
-    payload: {
-      connectionId: string;
-      endpoint: "from" | "to";
-      shapeId: string;
-      point: string;
+      type: "CONVERT_CONNECTION_ENDPOINT";
+      payload: {
+        connectionId: string;
+        endpoint: "from" | "to";
+        shapeId: string;
+        point: string;
+      };
     };
-  };
 
 // Tambahkan: batchHistory untuk drag
 const diagramReducer = (
@@ -461,14 +454,14 @@ const diagramReducer = (
       const newConnections = state.connections.map((conn) =>
         conn.id === id
           ? {
-            ...conn,
-            points,
-            style,
-            ...(from !== undefined ? { from } : {}),
-            ...(to !== undefined ? { to } : {}),
-            ...(fromPoint !== undefined ? { fromPoint } : {}),
-            ...(toPoint !== undefined ? { toPoint } : {}),
-          }
+              ...conn,
+              points,
+              style,
+              ...(from !== undefined ? { from } : {}),
+              ...(to !== undefined ? { to } : {}),
+              ...(fromPoint !== undefined ? { fromPoint } : {}),
+              ...(toPoint !== undefined ? { toPoint } : {}),
+            }
           : conn
       );
       const newHistory = state.history.slice(0, state.historyIndex + 1);
@@ -539,9 +532,9 @@ const diagramReducer = (
         ...state,
         clipboard: shapeToCopy
           ? {
-            shapes: [shapeToCopy],
-            connections: connectionsToCopy,
-          }
+              shapes: [shapeToCopy],
+              connections: connectionsToCopy,
+            }
           : null,
       };
     }
@@ -559,9 +552,9 @@ const diagramReducer = (
         clipboard:
           shapesToCopy.length > 0
             ? {
-              shapes: shapesToCopy,
-              connections: connectionsToCopy,
-            }
+                shapes: shapesToCopy,
+                connections: connectionsToCopy,
+              }
             : null,
       };
     }
@@ -663,23 +656,6 @@ const diagramReducer = (
       };
       return newState;
     }
-    case "SET_DIAGRAM": {
-      const { shapes, connections } = action.payload;
-      const newHistory = state.history.slice(0, state.historyIndex + 1);
-      newHistory.push({ shapes, connections });
-      return {
-        ...state,
-        shapes,
-        connections,
-        selectedId: null,
-        selectedIds: [],
-        selectedConnectionId: null,
-        history: newHistory,
-        historyIndex: state.historyIndex + 1,
-        canUndo: true,
-        canRedo: false,
-      };
-    }
     case "UNDO": {
       if (state.historyIndex <= 0) return state;
       const newIndex = state.historyIndex - 1;
@@ -772,14 +748,8 @@ const DiagramContext = createContext<DiagramContextType | undefined>(undefined);
 export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [internalStageRef, setInternalStageRef] = useState<React.RefObject<any>>(React.createRef());
   const [state, dispatch] = useReducer(diagramReducer, initialState);
   const [selectedShapeIds, setSelectedShapeIds] = useState<string[]>([]);
-  const stageRef = useRef<any>(null);
-
-  const setStageRef = (ref: React.RefObject<any>) => {
-    setInternalStageRef(ref);
-  };
 
   const addShape = (shape: ShapeOnCanvas) => {
     // Terapkan properti yang konsisten
@@ -1122,7 +1092,6 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     state.dragInitialShapes = [];
   };
 
-
   // Tambahkan fungsi addTextElement yang sudah diperbaiki
   const addTextElement = (textElement: TextElementProps) => {
     console.log("addTextElement called with:", textElement);
@@ -1234,10 +1203,6 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     completeDrawingConnection,
     cancelDrawingConnection,
     convertConnectionEndpoint,
-    exportDiagram,
-    importDiagram,
-    stageRef: internalStageRef,
-    setStageRef,
     selectedIds:
       selectedShapeIds.length > 0 ? selectedShapeIds : state.selectedIds,
   };

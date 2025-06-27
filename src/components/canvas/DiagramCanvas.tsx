@@ -10,7 +10,6 @@ import ContextMenu from "./ContextMenu";
 import { Connection as ConnectionType } from "../../types/shapes";
 
 const DiagramCanvas: React.FC = () => {
-  
   const stageRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   // Gunakan ref untuk menyimpan dimensi, hindari useState karena menyebabkan re-render
@@ -64,15 +63,7 @@ const DiagramCanvas: React.FC = () => {
     connectionDrawingStyle,
     cancelDrawingConnection,
     addConnection,
-    stageRef: contextStageRef,
-    setStageRef,
   } = useDiagramContext();
-
-  useEffect(() => {
-    if (setStageRef) {
-      setStageRef(stageRef);
-    }
-  }, [stageRef, setStageRef]);
 
   // Buat fungsi pembuat menu di luar useEffect
   const createShapeContextMenu = (shapeId: string) => {
