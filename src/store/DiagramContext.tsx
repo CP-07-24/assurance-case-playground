@@ -47,10 +47,17 @@ interface DiagramState {
   isDrawingConnection: boolean;
   connectionDrawingStyle: Connection["style"] | null;
   connectionStartPoint: { x: number; y: number } | null;
+  // Untuk batching drag
+  isDragging?: boolean;
+  dragShapeIds?: string[];
+  dragInitialShapes?: ShapeOnCanvas[];
 }
 
 // DiagramContextType menyediakan semua fungsi untuk berinteraksi dengan diagram
 interface DiagramContextType extends DiagramState {
+  // Untuk batching drag
+  startDrag: (ids: string[]) => void;
+  endDrag: () => void;
   addShape: (shape: ShapeOnCanvas) => void;
   updateShapePosition: (id: string, newAttrs: Partial<ShapeOnCanvas>) => void;
   updateShape: (
@@ -216,9 +223,10 @@ type DiagramAction =
       };
     };
 
+// Tambahkan: batchHistory untuk drag
 const diagramReducer = (
   state: DiagramState,
-  action: DiagramAction
+  action: DiagramAction & { batchHistory?: boolean }
 ): DiagramState => {
   switch (action.type) {
     case "ADD_SHAPE": {
@@ -249,6 +257,13 @@ const diagramReducer = (
           // Pastikan semua shape memiliki properti yang konsisten
           return updatedShape ? ensureShapeProperties(updatedShape) : shape;
         });
+        // Jika batchHistory true, jangan push ke history (untuk drag)
+        if (action.batchHistory) {
+          return {
+            ...state,
+            shapes: newShapes,
+          };
+        }
         const newHistory = state.history.slice(0, state.historyIndex + 1);
         newHistory.push({ shapes: newShapes, connections: state.connections });
         return {
@@ -285,6 +300,13 @@ const diagramReducer = (
       const newShapes = state.shapes.map((shape) =>
         shape.id === id ? { ...shape, ...attrs } : shape
       );
+      // Jika batchHistory true, jangan push ke history (untuk drag)
+      if (action.batchHistory) {
+        return {
+          ...state,
+          shapes: newShapes,
+        };
+      }
       const newHistory = state.history.slice(0, state.historyIndex + 1);
       newHistory.push({ shapes: newShapes, connections: state.connections });
       return {
@@ -317,10 +339,7 @@ const diagramReducer = (
       };
     }
     case "DELETE_SHAPE": {
-      // Don't delete shape if it's currently being edited
-      if (state.editingShapeId === action.payload) {
-        return state;
-      }
+      // Izinkan hapus shape kapan saja, termasuk text, meskipun sedang diedit
       const newShapes = state.shapes.filter(
         (shape) => shape.id !== action.payload
       );
@@ -342,10 +361,8 @@ const diagramReducer = (
       };
     }
     case "DELETE_SHAPES": {
-      // Filter out shapes that are being edited
-      const idsToDelete = action.payload.filter(
-        (id) => id !== state.editingShapeId
-      );
+      // Izinkan hapus semua shape yang dipilih, termasuk text, kapan saja
+      const idsToDelete = action.payload;
       if (idsToDelete.length === 0) {
         return state;
       }
@@ -740,9 +757,11 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     dispatch({ type: "ADD_SHAPE", payload: completeShape });
   };
 
+  // Tambahkan: batching undo/redo untuk drag
   const updateShapePosition = (
     id: string,
-    newAttrs: Partial<ShapeOnCanvas>
+    newAttrs: Partial<ShapeOnCanvas>,
+    batchHistory?: boolean
   ) => {
     // Jika kita sedang men-drag shape yang merupakan bagian dari multi-selection
     if (state.selectedIds.length > 1 && state.selectedIds.includes(id)) {
@@ -780,21 +799,34 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
         }
         return shape;
       });
-      // Perbarui semua shape yang dipilih sekaligus dengan satu tindakan
-      const newHistory = state.history.slice(0, state.historyIndex + 1);
-      newHistory.push({
-        shapes: updatedShapes,
-        connections: state.connections,
-      });
-      dispatch({
-        type: "ADD_SHAPES",
-        payload: updatedShapes.filter((shape) =>
-          state.selectedIds.includes(shape.id)
-        ),
-      });
+      // Jika batchHistory true, jangan push ke history (hanya update state)
+      if (batchHistory) {
+        // Update state tanpa push ke history (manual, tidak lewat reducer)
+        // (Perlu trigger re-render, bisa pakai dispatch custom action jika perlu)
+        // Sementara: dispatch ke reducer, tapi reducer tidak push ke history jika batchHistory true
+        dispatch({
+          type: "ADD_SHAPES",
+          payload: updatedShapes.filter((shape) =>
+            state.selectedIds.includes(shape.id)
+          ),
+          batchHistory: true,
+        } as any);
+      } else {
+        // Perbarui semua shape yang dipilih sekaligus dengan satu tindakan
+        dispatch({
+          type: "ADD_SHAPES",
+          payload: updatedShapes.filter((shape) =>
+            state.selectedIds.includes(shape.id)
+          ),
+        });
+      }
     } else {
       // Jika hanya satu shape yang dipilih, gunakan implementasi asli
-      dispatch({ type: "UPDATE_SHAPE", payload: { id, attrs: newAttrs } });
+      if (batchHistory) {
+        dispatch({ type: "UPDATE_SHAPE", payload: { id, attrs: newAttrs }, batchHistory: true } as any);
+      } else {
+        dispatch({ type: "UPDATE_SHAPE", payload: { id, attrs: newAttrs } });
+      }
     }
   };
 
@@ -831,25 +863,15 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const deleteShape = (id: string) => {
-    // Only delete if not currently editing
-    if (state.editingShapeId !== id) {
-      dispatch({ type: "DELETE_SHAPE", payload: id });
-    } else {
-      console.log("Cannot delete shape while editing:", id);
-    }
+    // Izinkan hapus shape text kapan saja
+    dispatch({ type: "DELETE_SHAPE", payload: id });
   };
 
   const deleteSelectedShapes = () => {
-    // Don't delete any shapes that are being edited
+    // Izinkan hapus semua shape yang dipilih, termasuk text, kapan saja
     if (state.selectedIds.length > 0) {
-      // Filter out the editing shape if it's in the selection
-      const shapesToDelete = state.selectedIds.filter(
-        (id) => id !== state.editingShapeId
-      );
-      if (shapesToDelete.length > 0) {
-        dispatch({ type: "DELETE_SHAPES", payload: shapesToDelete });
-      }
-    } else if (state.selectedId && state.selectedId !== state.editingShapeId) {
+      dispatch({ type: "DELETE_SHAPES", payload: state.selectedIds });
+    } else if (state.selectedId) {
       dispatch({ type: "DELETE_SHAPE", payload: state.selectedId });
     }
   };
@@ -1048,6 +1070,28 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     dispatch({ type: "TOGGLE_SIDEBAR" });
   };
 
+  // --- Batching drag undo/redo ---
+  const startDrag = (ids: string[]) => {
+    // Simpan state awal shapes yang di-drag
+    const dragInitialShapes = state.shapes.filter((s) => ids.includes(s.id));
+    // Set flag isDragging dan simpan ids
+    dispatch({
+      type: "SET_MULTIPLE_SELECTION",
+      payload: ids,
+    });
+    // Set manual state (tidak lewat reducer, karena tidak ada action khusus)
+    state.isDragging = true;
+    state.dragShapeIds = ids;
+    state.dragInitialShapes = dragInitialShapes;
+  };
+
+  const endDrag = () => {
+    // Reset flag
+    state.isDragging = false;
+    state.dragShapeIds = [];
+    state.dragInitialShapes = [];
+  };
+
   // Tambahkan fungsi addTextElement yang sudah diperbaiki
   const addTextElement = (textElement: TextElementProps) => {
     console.log("addTextElement called with:", textElement);
@@ -1122,7 +1166,10 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     ...state,
     addShape,
     updateShapePosition,
+    // signature update: (id, newAttrs, batchHistory?)
     updateShape,
+    startDrag,
+    endDrag,
     setSelectedId,
     setSelectedConnection,
     updateSelectedShape,

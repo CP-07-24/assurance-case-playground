@@ -13,7 +13,7 @@ interface DiagramShapeProps {
   isSelected: boolean;
   onSelect: () => void;
   onShiftSelect?: () => void;
-  onChange: (newAttrs: Partial<ShapeOnCanvas>) => void;
+  onChange: (newAttrs: Partial<ShapeOnCanvas>, batchHistory?: boolean) => void;
 }
 
 // Helper function untuk format multiline text (tambahkan di luar component)
@@ -69,7 +69,9 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
     connectingFromPoint,
     startConnectionFromPoint,
     selectedIds,
-    updateShapePosition,
+    // updateShapePosition,
+    startDrag,
+    endDrag,
     // startDrawingConnection,
   } = useDiagramContext();
 
@@ -144,6 +146,11 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
     // Simpan posisi awal untuk shape ini
     initialPositionRef.current = { x: shape.x, y: shape.y };
 
+    // Mulai batching drag di context
+    if (isSelected) {
+      startDrag(selectedIds.length > 0 ? selectedIds : [shape.id]);
+    }
+
     // Jika multiple shapes dipilih, simpan posisi awal untuk semua shapes
     if (selectedIds.length > 1 && isSelected) {
       const selectedShapes = getSelectedShapes();
@@ -180,11 +187,9 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
       });
     }
 
-    // Perbarui attrs untuk shape yang di-drag
-    onChange({
-      x: e.target.x(),
-      y: e.target.y(),
-    });
+    // Selama drag, JANGAN update state/context!
+    // Biarkan Konva yang handle posisi node.
+
   };
 
   // Tangani akhir drag
@@ -196,15 +201,25 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
         // Jangan update shape yang sedang di-drag (sudah diupdate oleh onChange di atas)
         if (shapeNode.id() !== shape.id) {
           // Ambil id dan posisi
-          const id = shapeNode.id();
+          // const id = shapeNode.id();
           const x = shapeNode.x();
           const y = shapeNode.y();
 
           // Perbarui posisi di store
-          updateShapePosition(id, { x, y });
+          onChange({ x, y }, false);
         }
       });
     }
+    // Untuk shape utama (yang di-drag), commit ke history
+    onChange(
+      {
+        x: shapeRef.current.x(),
+        y: shapeRef.current.y(),
+      },
+      false
+    );
+    // Selesai batching drag
+    endDrag();
   };
 
   // Handle transform untuk menyesuaikan ukuran teks dan connector saat shape di-resize
@@ -1337,7 +1352,7 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
             {/* Main text dengan ukuran font yang konsisten */}
             <Text
               ref={textRef}
-              text={shape.mainText || ""}
+              text={shape.value || shape.mainText || ""}
               x={mainTextX}
               y={mainTextY}
               width={(shape.width || defaultSize.width) - 24}

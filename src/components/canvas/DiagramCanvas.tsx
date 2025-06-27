@@ -517,7 +517,9 @@ const DiagramCanvas: React.FC = () => {
                 isSelected={selectedIds.includes(shape.id)}
                 onSelect={() => setSelectedId(shape.id)}
                 onShiftSelect={() => toggleShapeSelection(shape.id)}
-                onChange={(newAttrs) => updateShapePosition(shape.id, newAttrs)}
+                onChange={(newAttrs, batchHistory) => {
+  updateShapePosition(shape.id, newAttrs, batchHistory);
+}}
               />
             ))}
           </Layer>
