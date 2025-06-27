@@ -4,7 +4,7 @@ import { validateApiKey } from '../services/aiService';
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  login: (token: string) => Promise<void>;
+  apikey: (token: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -15,7 +15,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return !!localStorage.getItem('aiToken');
   });
 
-  const login = async (token: string) => {
+  const apikey = async (token: string) => {
     const isValid = await validateApiKey(token);
     if (!isValid) {
       throw new Error('Invalid token');
@@ -30,7 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, apikey, logout }}>
       {children}
     </AuthContext.Provider>
   );

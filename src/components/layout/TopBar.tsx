@@ -1,4 +1,4 @@
-"use client"; // Wajib karena menggunakan hooks dan interaktivitas
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { Edit, HelpCircle, Lightbulb, FolderKanban } from "lucide-react";
@@ -15,6 +15,9 @@ import Logo from "../../assets/logoeditor.png";
 
 // IMPORT DOCUMENTATION MODAL
 import { GuidanceModal } from "../documentation";
+
+// IMPORT GUIDANCE DIALOG
+import GuidanceDialog from "../dialogs/GuidanceDialog";
 
 const TopBar: React.FC = () => {
   const {
@@ -41,7 +44,7 @@ const TopBar: React.FC = () => {
   const [showDocumentationModal, setShowDocumentationModal] = useState(false);
   const [documentationSection, setDocumentationSection] = useState<string>('introduction');
 
-  // STATE UNTUK GUIDANCE DIALOG (dari habli-guidance branch)
+  // STATE UNTUK GUIDANCE DIALOG
   const [isGuidanceDialogOpen, setIsGuidanceDialogOpen] = useState(false);
 
   // Pantau perubahan status autentikasi
@@ -64,12 +67,12 @@ const TopBar: React.FC = () => {
   const openDocumentationModal = (section: string = 'introduction') => {
     setDocumentationSection(section);
     setShowDocumentationModal(true);
-    setActiveMenu(null); // Tutup dropdown menu
+    setActiveMenu(null);
   };
 
-  // FUNGSI UNTUK MEMBUKA GUIDANCE DIALOG (dari habli-guidance branch)
+  // FUNGSI UNTUK MEMBUKA GUIDANCE DIALOG
   const handleGuidanceClick = () => {
-    setActiveMenu(null); // Tutup dropdown menu
+    setActiveMenu(null);
     setIsGuidanceDialogOpen(true);
   };
 
@@ -106,7 +109,6 @@ const TopBar: React.FC = () => {
             break;
           case "a":
             e.preventDefault();
-            console.log("Ctrl+A detected, calling selectAllShapes");
             selectAllShapes();
             break;
           case "d":
@@ -210,7 +212,7 @@ const TopBar: React.FC = () => {
     },
   ];
 
-  // DOCUMENTATION/HELP MENU ITEMS (digabung dari kedua branch)
+  // HELP/DOCUMENTATION MENU ITEMS
   const helpMenuItems = [
     {
       label: "Introduction of GSN",
@@ -306,7 +308,7 @@ const TopBar: React.FC = () => {
               )}
             </div>
 
-            {/* HELP/DOCUMENTATION Menu (digabung dari kedua branch) */}
+            {/* HELP/DOCUMENTATION Menu */}
             <div className="relative">
               <button
                 className={`px-3 py-1.5 text-sm font-medium ${
@@ -324,7 +326,7 @@ const TopBar: React.FC = () => {
               )}
             </div>
 
-            {/* GUIDANCE Button (dari habli-guidance branch) */}
+            {/* GUIDANCE Button */}
             <div className="relative">
               <button
                 className="px-3 py-1.5 text-sm font-medium hover:bg-gray-50 rounded-md"
@@ -409,6 +411,12 @@ const TopBar: React.FC = () => {
         isOpen={showDocumentationModal} 
         onClose={() => setShowDocumentationModal(false)}
         initialSection={documentationSection}
+      />
+
+      {/* GUIDANCE DIALOG */}
+      <GuidanceDialog
+        isOpen={isGuidanceDialogOpen}
+        onClose={() => setIsGuidanceDialogOpen(false)}
       />
     </>
   );

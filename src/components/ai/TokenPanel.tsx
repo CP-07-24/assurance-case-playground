@@ -3,12 +3,12 @@ import { Sparkles } from 'lucide-react';
 import { validateApiKey, setApiKey } from '../../services/aiService';
 import { useAuth } from '../../context/AuthContext';
 
-interface LoginPanelProps {
+interface TokenPanelProps {
   onSuccess: () => void;
 }
 
-const LoginPanel: React.FC<LoginPanelProps> = ({ onSuccess }) => {
-  const { login } = useAuth();
+const TokenPanel: React.FC<TokenPanelProps> = ({ onSuccess }) => {
+  const { apikey } = useAuth();
   const [token, setToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -28,7 +28,7 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onSuccess }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(token);
+    apikey(token);
     if (!token.trim()) {
       setError('Please enter a valid token');
       return;
@@ -126,4 +126,4 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onSuccess }) => {
   );
 };
 
-export default LoginPanel;
+export default TokenPanel;

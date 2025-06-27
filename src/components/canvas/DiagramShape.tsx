@@ -5,6 +5,7 @@ import { ShapeOnCanvas } from "../../types/shapes";
 import SVGImage from "./SvgImage";
 import { KonvaEventObject } from "konva/lib/Node";
 import Konva from "konva";
+import { getDefaultShapeSize } from "../../utils/shapeUtils";
 
 interface DiagramShapeProps {
   shape: ShapeOnCanvas;
@@ -90,7 +91,7 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
     // Membuat ukuran font proporsional tapi dengan batas maksimum dan minimum
     const baseDimension = Math.min(shape.width || 100, shape.height || 50);
     const scaleFactor = baseDimension / 100; // 100 adalah ukuran shape default
-    return Math.min(16, Math.max(9, baseFontSize * scaleFactor));
+    return Math.min(16, Math.max(10, baseFontSize * scaleFactor));
   };
 
   // Fungsi untuk mendapatkan semua shape yang dipilih
@@ -303,6 +304,9 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
     container.dispatchEvent(customEvent);
   };
 
+  // Gunakan fungsi helper ini di dalam komponen DiagramShape
+  const defaultSize = getDefaultShapeSize(shape.type);
+
   // Fungsi untuk menghasilkan string SVG dari properti shape
   const getSvgString = () => {
     let svgContent = "";
@@ -391,51 +395,14 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
         break;
       case "extension2":
         svgContent = `
-          <svg xmlns="http://www.w3.org/2000/svg" style="background: transparent; background-color: transparent;" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="163px" height="112px" viewBox="-0.5 -0.5 163 112">
-            <defs/>
-            <g>
-              <g data-cell-id="0">
-                <g data-cell-id="1">
-                  <g data-cell-id="MOz40AirWiUDpaGuPCgQ-9">
-                    <g/>
-                    <g data-cell-id="MOz40AirWiUDpaGuPCgQ-10">
-                      <g>
-                        <path d="M 0.47 110 L 0 60" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));"/>
-                      </g>
-                    </g>
-                    <g data-cell-id="MOz40AirWiUDpaGuPCgQ-11">
-                      <g>
-                        <path d="M 160.47 110 L 160 60" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));"/>
-                      </g>
-                    </g>
-                    <g data-cell-id="MOz40AirWiUDpaGuPCgQ-12">
-                      <g>
-                        <path d="M 0 110 L 120 110" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));"/>
-                      </g>
-                    </g>
-                    <g data-cell-id="MOz40AirWiUDpaGuPCgQ-13">
-                      <g>
-                        <path d="M 115.47 110 L 161 110" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));"/>
-                      </g>
-                    </g>
-                    <g data-cell-id="MOz40AirWiUDpaGuPCgQ-14">
-                      <g>
-                        <path d="M 0.5 90 L 160.5 90" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));"/>
-                      </g>
-                    </g>
-                    <g data-cell-id="MOz40AirWiUDpaGuPCgQ-15">
-                      <g>
-                        <path d="M 0 60 Q 0 0 80 0 Q 160 0 160 60" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));"/>
-                      </g>
-                    </g>
-                    <g data-cell-id="MOz40AirWiUDpaGuPCgQ-16">
-                      <g>
-                        <image x="4.5" y="93.5" width="19.27" height="13" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHsAAABTCAYAAAC/OHgkAAAAAXNSR0IArs4c6QAAAAlwSFlzAAAPYQAAD2EBqD+naQAAAZhJREFUeF7t3TFuA0EIBdD19XzgvV6idE7hCq00/P/SYzE8QBQr5XVd18+15++1J9XzMv0rHuzzXB7JCPYjZT3zR/9h3/d9XJbv9/szJ2t8IAR7ULxtobC3iQ3yhT0o3rZQ2NvEBvnCHhRvWyjsbWKDfGEPirctFPY2sUG+sAfF2xYKe5vYIF/Yg+JtC4W9TWyQL+xB8baFwt4mNsgX9qB420JhbxMb5LvtS5XBU4XCLuoB2K3YJ36DVmTxyFM/v+E7/kB7pAJFPwob9nVZ43ldYLLzTL++CDZsazyxB0x2ouqXN8GGbY0n9oDJTlS1xotUYcO2xot6ADZs13hiD5jsRFUHWpEqbNjWeFEPwIbtGk/sAZOdqOpAK1KFDdsaL+oB2LBd44k9YLITVR1oRaqwYVvjRT0AG7ZrPLEHTHaiqgOtSBU2bGu8qAdgw3aNJ/aAyU5UdaAVqcKGbY0X9QBs2K7xxB4w2YmqDrQiVdiwrfGiHoAN2zWe2AMmO1HVgVakChu2NV7UA7BhF1Wg9Kn+PWMRPOwi7F945jEkM8lwQwAAAABJRU5ErkJggg==" preserveAspectRatio="none"/>
-                      </g>
-                    </g>
-                  </g>
-                </g>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="228.46 181.41 76.04 83.6">
+            <g style="" transform="matrix(1, 0, 0, 1.039405, 0, -10.423142)">
+              <rect x="228.958" y="245.876" width="75.036" height="18.64" style="stroke: rgb(0, 0, 0); fill: none;"/>
+              <g transform="matrix(0.436665, 0, 0, 0.518052, 106.434837, 113.239815)" style="">
+                <rect x="291.624" y="268.148" width="31.442" height="13.408" style="stroke: rgb(0, 0, 0); fill: rgb(215, 215, 215);"/>
+                <rect x="291.624" y="263.496" width="11.706" height="4.652" style="stroke: rgb(0, 0, 0); fill: rgb(215, 215, 215);"/>
               </g>
+              <path style="stroke: rgb(0, 0, 0); fill: none;" d="M 228.958 222.158 L 228.958 245.876 L 303.994 245.876 L 303.994 222.222 C 298.294 169.367 232.928 176.067 228.958 222.158 Z"/>
             </g>
           </svg>
         `;
@@ -1289,8 +1256,8 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
       >
         <SVGImage
           svgContent={getSvgString()}
-          width={shape.width || 100}
-          height={shape.height || 50}
+          width={shape.width || defaultSize.width}
+          height={shape.height || defaultSize.height}
         />
 
         {/* Render teks dengan ukuran yang proporsional */}
@@ -1323,8 +1290,8 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
             {/* ID Text with proportional font size */}
             <Text
               text={`${getDefaultPrefix()}${shape.idText || ""}`}
-              x={8}
-              y={6}
+              x={15}
+              y={15}
               fontSize={idFontSize}
               fontFamily="Arial, sans-serif"
               fill="#333"
@@ -1336,12 +1303,14 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
             <Text
               ref={textRef}
               text={shape.value || shape.text || shape.title || ""}
-              x={shape.textX || 12}
-              y={shape.textY || (shape.height || 50) / 2 - 8}
-              width={(shape.width || 100) - 24}
-              height={Math.max(20, (shape.height || 50) - 40)}
+              x={shape.width ? shape.width / 1.68 : defaultSize.width / 2} // Posisi tengah horizontal
+              y={shape.height ? shape.height / 4 : defaultSize.height / 2} // Posisi tengah vertikal
+              width={(shape.width || defaultSize.width) - 24}
+              height={Math.max(20, (shape.height || defaultSize.height) - 40)}
               align="center"
               verticalAlign="middle"
+              offsetX={(shape.width || defaultSize.width - 24) / 2} // Penting untuk mengatur posisi teks dari tengah
+              offsetY={0} // Offset vertikal jika diperlukan
               fontSize={mainFontSize}
               fontFamily="Arial, sans-serif"
               fontStyle={shape.descFontWeight === "bold" ? "bold" : "normal"}
@@ -1375,23 +1344,23 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
       {shape.type !== "text" && shouldShowConnectors && (
         <Group x={shape.x} y={shape.y}>
           {/* Titik penghubung kiri */}
-          {renderConnector("left", 0, (shape.height || 50) / 2)}
+          {renderConnector("left", 0, (shape.height || defaultSize.height) / 2)}
 
           {/* Titik penghubung kanan */}
           {renderConnector(
             "right",
-            shape.width || 100,
-            (shape.height || 50) / 2
+            shape.width || defaultSize.width,
+            (shape.height || defaultSize.height) / 2
           )}
 
           {/* Titik penghubung atas */}
-          {renderConnector("top", (shape.width || 100) / 2, 0)}
+          {renderConnector("top", (shape.width || defaultSize.width) / 2, 0)}
 
           {/* Titik penghubung bawah */}
           {renderConnector(
             "bottom",
-            (shape.width || 100) / 2,
-            shape.height || 50
+            (shape.width || defaultSize.width) / 2,
+            shape.height || defaultSize.height
           )}
         </Group>
       )}
