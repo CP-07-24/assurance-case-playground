@@ -334,7 +334,7 @@ const TopBar: React.FC = () => {
               >
                 <div className="flex items-center">
                   <Lightbulb size={16} className="mr-1.5" />
-                  GUIDANCE
+                  App Guide
                 </div>
               </button>
             </div>

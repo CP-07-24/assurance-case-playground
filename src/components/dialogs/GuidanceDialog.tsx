@@ -97,7 +97,7 @@ const GuidanceDialog: React.FC<GuidanceDialogProps> = ({ isOpen, onClose }) => {
       <div className="bg-white rounded-lg shadow-xl w-11/12 max-w-4xl h-5/6 max-h-screen overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Guidance</h2>
+          <h2 className="text-lg font-semibold text-gray-900">App Guide</h2>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-md transition-colors"
@@ -115,7 +115,7 @@ const GuidanceDialog: React.FC<GuidanceDialogProps> = ({ isOpen, onClose }) => {
             </div>
             <input
               type="text"
-              placeholder="Placeholder"
+              placeholder="Search Guide"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
