@@ -151,7 +151,7 @@ const TopBar: React.FC = () => {
   const projectMenuItems = [
     {
       label: "New Project",
-      onClick: openNewProject,
+      action: openNewProject,
       shortcut: "",
     },
   ];
@@ -159,19 +159,19 @@ const TopBar: React.FC = () => {
   const editMenuItems = [
     {
       label: "Undo",
-      onClick: () => undo(),
+      action: () => undo(),
       shortcut: "Ctrl+Z",
       disabled: !canUndo,
     },
     {
       label: "Redo",
-      onClick: () => redo(),
+      action: () => redo(),
       shortcut: "Ctrl+Y",
       disabled: !canRedo,
     },
     {
       label: "Cut",
-      onClick: () => {
+      action: () => {
         copyShape();
         deleteSelectedShapes();
       },
@@ -180,19 +180,19 @@ const TopBar: React.FC = () => {
     },
     {
       label: "Copy",
-      onClick: () => copyShape(),
+      action: () => copyShape(),
       shortcut: "Ctrl+C",
       disabled: selectedIds.length === 0,
     },
     {
       label: "Paste",
-      onClick: () => pasteShape(),
+      action: () => pasteShape(),
       shortcut: "Ctrl+V",
       disabled: !clipboard,
     },
     {
       label: "Duplicate",
-      onClick: () => {
+      action: () => {
         duplicateSelectedShapes();
       },
       shortcut: "Ctrl+D",
@@ -200,13 +200,13 @@ const TopBar: React.FC = () => {
     },
     {
       label: "Select All",
-      onClick: () => selectAllShapes(),
+      action: () => selectAllShapes(),
       shortcut: "Ctrl+A",
       disabled: shapes.length === 0,
     },
     {
       label: "Delete",
-      onClick: () => deleteSelectedShapes(),
+      action: () => deleteSelectedShapes(),
       shortcut: "Del",
       disabled: selectedIds.length === 0,
     },
@@ -216,27 +216,27 @@ const TopBar: React.FC = () => {
   const helpMenuItems = [
     {
       label: "Introduction of GSN",
-      onClick: () => openDocumentationModal('introduction'),
+      action: () => openDocumentationModal('introduction'),
       shortcut: "",
     },
     {
       label: "Getting Started",
-      onClick: () => openDocumentationModal('getting-started'),
+      action: () => openDocumentationModal('getting-started'),
       shortcut: "",
     },
     {
       label: "GSN Elements",
-      onClick: () => openDocumentationModal('gsn-elements'),
+      action: () => openDocumentationModal('gsn-elements'),
       shortcut: "",
     },
     {
       label: "Best Practices",
-      onClick: () => openDocumentationModal('best-practices'),
+      action: () => openDocumentationModal('best-practices'),
       shortcut: "",
     },
     {
       label: "Tips & Tricks",
-      onClick: () => openDocumentationModal('tips-tricks'),
+      action: () => openDocumentationModal('tips-tricks'),
       shortcut: "",
     },
   ];
@@ -318,7 +318,7 @@ const TopBar: React.FC = () => {
               >
                 <div className="flex items-center">
                   <HelpCircle size={16} className="mr-1.5" />
-                  DOCUMENTATION
+                  Notation Guide
                 </div>
               </button>
               {activeMenu === "help" && (

@@ -54,7 +54,7 @@ const DocumentationNavigation: React.FC<DocumentationNavigationProps> = ({
   return (
     <div className="w-1/4 bg-gray-50 border-r border-gray-200 overflow-y-auto">
       <div className="p-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-800">Documentation</h2>
+        <h2 className="text-lg font-semibold text-gray-800">Notation Guide</h2>
       </div>
       
       <div className="p-3 space-y-1">
