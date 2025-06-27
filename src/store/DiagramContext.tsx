@@ -1092,6 +1092,7 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     state.dragInitialShapes = [];
   };
 
+
   // Tambahkan fungsi addTextElement yang sudah diperbaiki
   const addTextElement = (textElement: TextElementProps) => {
     console.log("addTextElement called with:", textElement);
