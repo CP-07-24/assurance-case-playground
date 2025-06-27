@@ -21,63 +21,63 @@ const GuidanceDialog: React.FC<GuidanceDialogProps> = ({ isOpen, onClose }) => {
   const videoGuides: VideoGuide[] = [
     {
       id: '1',
-      title: 'Gunakan AI Prompt di Aplikasi Permoalan',
+      title: 'Gunakan AI Prompt di Aplikasi Permodelan',
       description: 'Pelajari cara menggunakan AI Prompt untuk meningkatkan produktivitas Anda',
       videoUrl: 'https://www.youtube.com/embed/2_WmgcF24jc',
       thumbnailUrl: 'https://img.youtube.com/vi/2_WmgcF24jc/mqdefault.jpg'
     },
     {
       id: '2',
-      title: 'Gunakan AI Prompt di Aplikasi Permoalan',
+      title: 'Gunakan AI Prompt di Aplikasi Permodelan',
       description: 'Panduan lengkap penggunaan AI dalam aplikasi',
       videoUrl: 'https://www.youtube.com/embed/2_WmgcF24jc',
       thumbnailUrl: 'https://img.youtube.com/vi/2_WmgcF24jc/mqdefault.jpg'
     },
     {
       id: '3',
-      title: 'Gunakan AI Prompt di Aplikasi Permoalan',
+      title: 'Gunakan AI Prompt di Aplikasi Permodelan',
       description: 'Tips dan trik untuk mengoptimalkan AI Prompt',
       videoUrl: 'https://www.youtube.com/embed/2_WmgcF24jc',
       thumbnailUrl: 'https://img.youtube.com/vi/2_WmgcF24jc/mqdefault.jpg'
     },
     {
       id: '4',
-      title: 'Gunakan AI Prompt di Aplikasi Permoalan',
+      title: 'Gunakan AI Prompt di Aplikasi Permodelan',
       description: 'Contoh praktis penggunaan AI dalam workflow',
       videoUrl: 'https://www.youtube.com/embed/2_WmgcF24jc',
       thumbnailUrl: 'https://img.youtube.com/vi/2_WmgcF24jc/mqdefault.jpg'
     },
     {
       id: '5',
-      title: 'Gunakan AI Prompt di Aplikasi Permoalan',
+      title: 'Gunakan AI Prompt di Aplikasi Permodelan',
       description: 'Advanced techniques untuk power users',
       videoUrl: 'https://www.youtube.com/embed/2_WmgcF24jc',
       thumbnailUrl: 'https://img.youtube.com/vi/2_WmgcF24jc/mqdefault.jpg'
     },
     {
       id: '6',
-      title: 'Gunakan AI Prompt di Aplikasi Permoalan',
+      title: 'Gunakan AI Prompt di Aplikasi Permodelan',
       description: 'Troubleshooting dan pemecahan masalah',
       videoUrl: 'https://www.youtube.com/embed/2_WmgcF24jc',
       thumbnailUrl: 'https://img.youtube.com/vi/2_WmgcF24jc/mqdefault.jpg'
     },
     {
       id: '7',
-      title: 'Gunakan AI Prompt di Aplikasi Permoalan',
+      title: 'Gunakan AI Prompt di Aplikasi Permodelan',
       description: 'Best practices dan rekomendasi',
       videoUrl: 'https://www.youtube.com/embed/2_WmgcF24jc',
       thumbnailUrl: 'https://img.youtube.com/vi/2_WmgcF24jc/mqdefault.jpg'
     },
     {
       id: '8',
-      title: 'Gunakan AI Prompt di Aplikasi Permoalan',
+      title: 'Gunakan AI Prompt di Aplikasi Permodelan',
       description: 'Integrasi dengan tools eksternal',
       videoUrl: 'https://www.youtube.com/embed/2_WmgcF24jc',
       thumbnailUrl: 'https://img.youtube.com/vi/2_WmgcF24jc/mqdefault.jpg'
     },
     {
       id: '9',
-      title: 'Gunakan AI Prompt di Aplikasi Permoalan',
+      title: 'Gunakan AI Prompt di Aplikasi Permodelan',
       description: 'Update terbaru dan fitur baru',
       videoUrl: 'https://www.youtube.com/embed/2_WmgcF24jc',
       thumbnailUrl: 'https://img.youtube.com/vi/2_WmgcF24jc/mqdefault.jpg'
