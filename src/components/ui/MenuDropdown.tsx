@@ -2,8 +2,10 @@ import React, { useEffect, useRef } from "react";
 
 interface MenuItem {
   label: string;
-  onClick: () => void;
+  action: () => void;
   shortcut: string;
+  disabled?: boolean;
+  separator?: boolean;
 }
 
 interface MenuDropdownProps {
@@ -21,9 +23,17 @@ const MenuDropdown: React.FC<MenuDropdownProps> = ({ items, onClose }) => {
       }
     };
 
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
     };
   }, [onClose]);
 
@@ -39,21 +49,34 @@ const MenuDropdown: React.FC<MenuDropdownProps> = ({ items, onClose }) => {
         </div>
       ) : (
         items.map((item, index) => (
-          <button
-            key={index}
-            className="flex justify-between items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-            onClick={() => {
-              item.onClick();
-              onClose();
-            }}
-          >
-            <span>{item.label}</span>
-            {item.shortcut && (
-              <span className="ml-4 text-xs text-gray-500">
-                {item.shortcut}
-              </span>
+          <React.Fragment key={index}>
+            {item.separator && (
+              <div className="border-t border-gray-100 my-1" />
             )}
-          </button>
+            <button
+              className={`flex justify-between items-center w-full px-4 py-2 text-left text-sm ${
+                item.disabled
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : 'text-gray-700 hover:bg-gray-100'
+              } transition-colors duration-150`}
+              onClick={() => {
+                if (!item.disabled) {
+                  item.action();
+                  onClose();
+                }
+              }}
+              disabled={item.disabled}
+            >
+              <span>{item.label}</span>
+              {item.shortcut && (
+                <span className={`ml-4 text-xs ${
+                  item.disabled ? 'text-gray-300' : 'text-gray-500'
+                }`}>
+                  {item.shortcut}
+                </span>
+              )}
+            </button>
+          </React.Fragment>
         ))
       )}
     </div>
