@@ -4,6 +4,7 @@ export interface Shape {
   id: string;
   type: string;
   title: string;
+  mainText: string;
   preview: React.ReactNode;
   width?: number;
   height?: number;

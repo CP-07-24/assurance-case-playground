@@ -1,7 +1,5 @@
-import React, { createContext, useContext, useReducer, useRef, useState } from "react";
+import React, { createContext, useContext, useReducer, useState } from "react";
 import { ShapeOnCanvas, Connection } from "../types/shapes";
-import { importDiagram as importDiagramUtil } from '../components/import/importutils';
-import { exportDiagram as exportDiagramUtil } from '../components/export/exportutils';
 import { getDefaultShapeSize } from "../utils/shapeUtils";
 
 // Tambahkan interface TextElementProps
@@ -49,10 +47,17 @@ interface DiagramState {
   isDrawingConnection: boolean;
   connectionDrawingStyle: Connection["style"] | null;
   connectionStartPoint: { x: number; y: number } | null;
+  // Untuk batching drag
+  isDragging?: boolean;
+  dragShapeIds?: string[];
+  dragInitialShapes?: ShapeOnCanvas[];
 }
 
 // DiagramContextType menyediakan semua fungsi untuk berinteraksi dengan diagram
 interface DiagramContextType extends DiagramState {
+  // Untuk batching drag
+  startDrag: (ids: string[]) => void;
+  endDrag: () => void;
   addShape: (shape: ShapeOnCanvas) => void;
   updateShapePosition: (id: string, newAttrs: Partial<ShapeOnCanvas>) => void;
   updateShape: (
@@ -106,10 +111,6 @@ interface DiagramContextType extends DiagramState {
     shapeId: string,
     point: string
   ) => void;
-  exportDiagram: (format: string) => Promise<void>;
-  importDiagram: (content: string, format: 'json' | 'xml') => void;
-  stageRef: React.RefObject<any>;
-  setStageRef: (ref: React.RefObject<any>) => void;
 }
 
 // initialState hanya berisi properti data yang sesuai dengan DiagramState
@@ -167,9 +168,9 @@ type DiagramAction =
   | { type: "ADD_SHAPE"; payload: ShapeOnCanvas }
   | { type: "ADD_SHAPES"; payload: ShapeOnCanvas[] }
   | {
-    type: "UPDATE_SHAPE";
-    payload: { id: string; attrs: Partial<ShapeOnCanvas> };
-  }
+      type: "UPDATE_SHAPE";
+      payload: { id: string; attrs: Partial<ShapeOnCanvas> };
+    }
   | { type: "SET_SELECTED"; payload: string | null }
   | { type: "SET_SELECTED_CONNECTION"; payload: string | null }
   | { type: "DELETE_SHAPE"; payload: string }
@@ -184,24 +185,24 @@ type DiagramAction =
   | { type: "CANCEL_CONNECTION" }
   | { type: "ADD_CONNECTION"; payload: Connection | ConnectionWithPoints }
   | {
-    type: "UPDATE_CONNECTION";
-    payload: {
-      id: string;
-      points: number[];
-      style: Connection["style"];
-      from?: string;
-      to?: string;
-      fromPoint?: string;
-      toPoint?: string;
-    };
-  }
+      type: "UPDATE_CONNECTION";
+      payload: {
+        id: string;
+        points: number[];
+        style: Connection["style"];
+        from?: string;
+        to?: string;
+        fromPoint?: string;
+        toPoint?: string;
+      };
+    }
   | { type: "DELETE_CONNECTION"; payload: string }
   | { type: "COPY_SHAPE"; payload: string }
   | { type: "COPY_SHAPES"; payload: string[] }
   | {
-    type: "PASTE_SHAPES_AND_CONNECTIONS";
-    payload: { offsetX: number; offsetY: number };
-  }
+      type: "PASTE_SHAPES_AND_CONNECTIONS";
+      payload: { offsetX: number; offsetY: number };
+    }
   | { type: "SELECT_ALL" }
   | { type: "CLEAR_SELECTION" }
   | { type: "TOGGLE_SHAPE_SELECTION"; payload: string }
@@ -212,20 +213,20 @@ type DiagramAction =
   | { type: "SET_CONNECTION_START_POINT"; payload: { x: number; y: number } }
   | { type: "COMPLETE_DRAWING_CONNECTION" }
   | { type: "CANCEL_DRAWING_CONNECTION" }
-  | { type: "SET_DIAGRAM"; payload: { shapes: ShapeOnCanvas[]; connections: Connection[] } }
   | {
-    type: "CONVERT_CONNECTION_ENDPOINT";
-    payload: {
-      connectionId: string;
-      endpoint: "from" | "to";
-      shapeId: string;
-      point: string;
+      type: "CONVERT_CONNECTION_ENDPOINT";
+      payload: {
+        connectionId: string;
+        endpoint: "from" | "to";
+        shapeId: string;
+        point: string;
+      };
     };
-  };
 
+// Tambahkan: batchHistory untuk drag
 const diagramReducer = (
   state: DiagramState,
-  action: DiagramAction
+  action: DiagramAction & { batchHistory?: boolean }
 ): DiagramState => {
   switch (action.type) {
     case "ADD_SHAPE": {
@@ -256,6 +257,13 @@ const diagramReducer = (
           // Pastikan semua shape memiliki properti yang konsisten
           return updatedShape ? ensureShapeProperties(updatedShape) : shape;
         });
+        // Jika batchHistory true, jangan push ke history (untuk drag)
+        if (action.batchHistory) {
+          return {
+            ...state,
+            shapes: newShapes,
+          };
+        }
         const newHistory = state.history.slice(0, state.historyIndex + 1);
         newHistory.push({ shapes: newShapes, connections: state.connections });
         return {
@@ -292,6 +300,13 @@ const diagramReducer = (
       const newShapes = state.shapes.map((shape) =>
         shape.id === id ? { ...shape, ...attrs } : shape
       );
+      // Jika batchHistory true, jangan push ke history (untuk drag)
+      if (action.batchHistory) {
+        return {
+          ...state,
+          shapes: newShapes,
+        };
+      }
       const newHistory = state.history.slice(0, state.historyIndex + 1);
       newHistory.push({ shapes: newShapes, connections: state.connections });
       return {
@@ -324,10 +339,7 @@ const diagramReducer = (
       };
     }
     case "DELETE_SHAPE": {
-      // Don't delete shape if it's currently being edited
-      if (state.editingShapeId === action.payload) {
-        return state;
-      }
+      // Izinkan hapus shape kapan saja, termasuk text, meskipun sedang diedit
       const newShapes = state.shapes.filter(
         (shape) => shape.id !== action.payload
       );
@@ -349,10 +361,8 @@ const diagramReducer = (
       };
     }
     case "DELETE_SHAPES": {
-      // Filter out shapes that are being edited
-      const idsToDelete = action.payload.filter(
-        (id) => id !== state.editingShapeId
-      );
+      // Izinkan hapus semua shape yang dipilih, termasuk text, kapan saja
+      const idsToDelete = action.payload;
       if (idsToDelete.length === 0) {
         return state;
       }
@@ -444,14 +454,14 @@ const diagramReducer = (
       const newConnections = state.connections.map((conn) =>
         conn.id === id
           ? {
-            ...conn,
-            points,
-            style,
-            ...(from !== undefined ? { from } : {}),
-            ...(to !== undefined ? { to } : {}),
-            ...(fromPoint !== undefined ? { fromPoint } : {}),
-            ...(toPoint !== undefined ? { toPoint } : {}),
-          }
+              ...conn,
+              points,
+              style,
+              ...(from !== undefined ? { from } : {}),
+              ...(to !== undefined ? { to } : {}),
+              ...(fromPoint !== undefined ? { fromPoint } : {}),
+              ...(toPoint !== undefined ? { toPoint } : {}),
+            }
           : conn
       );
       const newHistory = state.history.slice(0, state.historyIndex + 1);
@@ -522,9 +532,9 @@ const diagramReducer = (
         ...state,
         clipboard: shapeToCopy
           ? {
-            shapes: [shapeToCopy],
-            connections: connectionsToCopy,
-          }
+              shapes: [shapeToCopy],
+              connections: connectionsToCopy,
+            }
           : null,
       };
     }
@@ -542,9 +552,9 @@ const diagramReducer = (
         clipboard:
           shapesToCopy.length > 0
             ? {
-              shapes: shapesToCopy,
-              connections: connectionsToCopy,
-            }
+                shapes: shapesToCopy,
+                connections: connectionsToCopy,
+              }
             : null,
       };
     }
@@ -646,23 +656,6 @@ const diagramReducer = (
       };
       return newState;
     }
-    case "SET_DIAGRAM": {
-      const { shapes, connections } = action.payload;
-      const newHistory = state.history.slice(0, state.historyIndex + 1);
-      newHistory.push({ shapes, connections });
-      return {
-        ...state,
-        shapes,
-        connections,
-        selectedId: null,
-        selectedIds: [],
-        selectedConnectionId: null,
-        history: newHistory,
-        historyIndex: state.historyIndex + 1,
-        canUndo: true,
-        canRedo: false,
-      };
-    }
     case "UNDO": {
       if (state.historyIndex <= 0) return state;
       const newIndex = state.historyIndex - 1;
@@ -755,14 +748,8 @@ const DiagramContext = createContext<DiagramContextType | undefined>(undefined);
 export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [internalStageRef, setInternalStageRef] = useState<React.RefObject<any>>(React.createRef());
   const [state, dispatch] = useReducer(diagramReducer, initialState);
   const [selectedShapeIds, setSelectedShapeIds] = useState<string[]>([]);
-  const stageRef = useRef<any>(null);
-
-  const setStageRef = (ref: React.RefObject<any>) => {
-    setInternalStageRef(ref);
-  };
 
   const addShape = (shape: ShapeOnCanvas) => {
     // Terapkan properti yang konsisten
@@ -770,9 +757,11 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     dispatch({ type: "ADD_SHAPE", payload: completeShape });
   };
 
+  // Tambahkan: batching undo/redo untuk drag
   const updateShapePosition = (
     id: string,
-    newAttrs: Partial<ShapeOnCanvas>
+    newAttrs: Partial<ShapeOnCanvas>,
+    batchHistory?: boolean
   ) => {
     // Jika kita sedang men-drag shape yang merupakan bagian dari multi-selection
     if (state.selectedIds.length > 1 && state.selectedIds.includes(id)) {
@@ -810,21 +799,34 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
         }
         return shape;
       });
-      // Perbarui semua shape yang dipilih sekaligus dengan satu tindakan
-      const newHistory = state.history.slice(0, state.historyIndex + 1);
-      newHistory.push({
-        shapes: updatedShapes,
-        connections: state.connections,
-      });
-      dispatch({
-        type: "ADD_SHAPES",
-        payload: updatedShapes.filter((shape) =>
-          state.selectedIds.includes(shape.id)
-        ),
-      });
+      // Jika batchHistory true, jangan push ke history (hanya update state)
+      if (batchHistory) {
+        // Update state tanpa push ke history (manual, tidak lewat reducer)
+        // (Perlu trigger re-render, bisa pakai dispatch custom action jika perlu)
+        // Sementara: dispatch ke reducer, tapi reducer tidak push ke history jika batchHistory true
+        dispatch({
+          type: "ADD_SHAPES",
+          payload: updatedShapes.filter((shape) =>
+            state.selectedIds.includes(shape.id)
+          ),
+          batchHistory: true,
+        } as any);
+      } else {
+        // Perbarui semua shape yang dipilih sekaligus dengan satu tindakan
+        dispatch({
+          type: "ADD_SHAPES",
+          payload: updatedShapes.filter((shape) =>
+            state.selectedIds.includes(shape.id)
+          ),
+        });
+      }
     } else {
       // Jika hanya satu shape yang dipilih, gunakan implementasi asli
-      dispatch({ type: "UPDATE_SHAPE", payload: { id, attrs: newAttrs } });
+      if (batchHistory) {
+        dispatch({ type: "UPDATE_SHAPE", payload: { id, attrs: newAttrs }, batchHistory: true } as any);
+      } else {
+        dispatch({ type: "UPDATE_SHAPE", payload: { id, attrs: newAttrs } });
+      }
     }
   };
 
@@ -861,25 +863,15 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const deleteShape = (id: string) => {
-    // Only delete if not currently editing
-    if (state.editingShapeId !== id) {
-      dispatch({ type: "DELETE_SHAPE", payload: id });
-    } else {
-      console.log("Cannot delete shape while editing:", id);
-    }
+    // Izinkan hapus shape text kapan saja
+    dispatch({ type: "DELETE_SHAPE", payload: id });
   };
 
   const deleteSelectedShapes = () => {
-    // Don't delete any shapes that are being edited
+    // Izinkan hapus semua shape yang dipilih, termasuk text, kapan saja
     if (state.selectedIds.length > 0) {
-      // Filter out the editing shape if it's in the selection
-      const shapesToDelete = state.selectedIds.filter(
-        (id) => id !== state.editingShapeId
-      );
-      if (shapesToDelete.length > 0) {
-        dispatch({ type: "DELETE_SHAPES", payload: shapesToDelete });
-      }
-    } else if (state.selectedId && state.selectedId !== state.editingShapeId) {
+      dispatch({ type: "DELETE_SHAPES", payload: state.selectedIds });
+    } else if (state.selectedId) {
       dispatch({ type: "DELETE_SHAPE", payload: state.selectedId });
     }
   };
@@ -907,7 +899,7 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
         from: state.connectingFromId,
         to: toId,
         points: [],
-        style: "line",
+        style: "solidArrow",
         fromPoint: state.connectingFromPoint || "right",
         toPoint: toPoint,
       };
@@ -1078,35 +1070,26 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     dispatch({ type: "TOGGLE_SIDEBAR" });
   };
 
-  const exportDiagram = async (format: string): Promise<void> => {
-    try {
-      const diagramData = {
-        shapes: state.shapes,
-        connections: state.connections
-      };
-
-      if (!internalStageRef.current) {
-        throw new Error('Stage reference is not ready');
-      }
-
-      await exportDiagramUtil(format, internalStageRef, diagramData);
-    } catch (error) {
-      console.error('Error in exportDiagram:', error);
-      throw error;
-    }
+  // --- Batching drag undo/redo ---
+  const startDrag = (ids: string[]) => {
+    // Simpan state awal shapes yang di-drag
+    const dragInitialShapes = state.shapes.filter((s) => ids.includes(s.id));
+    // Set flag isDragging dan simpan ids
+    dispatch({
+      type: "SET_MULTIPLE_SELECTION",
+      payload: ids,
+    });
+    // Set manual state (tidak lewat reducer, karena tidak ada action khusus)
+    state.isDragging = true;
+    state.dragShapeIds = ids;
+    state.dragInitialShapes = dragInitialShapes;
   };
 
-  const importDiagram = (content: string, format: 'json' | 'xml'): void => {
-    try {
-      const importedData = importDiagramUtil(content, format);
-      dispatch({
-        type: "SET_DIAGRAM",
-        payload: importedData
-      });
-    } catch (error) {
-      console.error('Error importing diagram:', error);
-      throw error;
-    }
+  const endDrag = () => {
+    // Reset flag
+    state.isDragging = false;
+    state.dragShapeIds = [];
+    state.dragInitialShapes = [];
   };
 
   // Tambahkan fungsi addTextElement yang sudah diperbaiki
@@ -1118,6 +1101,7 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
         id: `text-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         type: "text",
         title: "Text", // Properti wajib dari Shape
+        mainText: "",
         preview: <div>Text</div>, // Properti wajib dari Shape
         x: textElement.x,
         y: textElement.y,
@@ -1182,7 +1166,10 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     ...state,
     addShape,
     updateShapePosition,
+    // signature update: (id, newAttrs, batchHistory?)
     updateShape,
+    startDrag,
+    endDrag,
     setSelectedId,
     setSelectedConnection,
     updateSelectedShape,
@@ -1216,10 +1203,6 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     completeDrawingConnection,
     cancelDrawingConnection,
     convertConnectionEndpoint,
-    exportDiagram,
-    importDiagram,
-    stageRef: internalStageRef,
-    setStageRef,
     selectedIds:
       selectedShapeIds.length > 0 ? selectedShapeIds : state.selectedIds,
   };

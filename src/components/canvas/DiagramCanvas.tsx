@@ -10,7 +10,6 @@ import ContextMenu from "./ContextMenu";
 import { Connection as ConnectionType } from "../../types/shapes";
 
 const DiagramCanvas: React.FC = () => {
-  
   const stageRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   // Gunakan ref untuk menyimpan dimensi, hindari useState karena menyebabkan re-render
@@ -53,7 +52,7 @@ const DiagramCanvas: React.FC = () => {
     setStageSize,
     cancelConnection,
     isConnecting,
-    stageSize,
+    // stageSize,
     clearSelection,
     toggleShapeSelection,
     deleteShape,
@@ -64,15 +63,7 @@ const DiagramCanvas: React.FC = () => {
     connectionDrawingStyle,
     cancelDrawingConnection,
     addConnection,
-    stageRef: contextStageRef,
-    setStageRef,
   } = useDiagramContext();
-
-  useEffect(() => {
-    if (setStageRef) {
-      setStageRef(stageRef);
-    }
-  }, [stageRef, setStageRef]);
 
   // Buat fungsi pembuat menu di luar useEffect
   const createShapeContextMenu = (shapeId: string) => {
@@ -236,7 +227,7 @@ const DiagramCanvas: React.FC = () => {
         from: "", // Kosong karena bukan antar shape
         to: "", // Kosong karena bukan antar shape
         points: [tempConnectionStart.x, tempConnectionStart.y, x, y],
-        style: connectionDrawingStyle || "line",
+        style: connectionDrawingStyle || "solidArrow",
       };
 
       addConnection(newConnection);
@@ -438,10 +429,6 @@ const DiagramCanvas: React.FC = () => {
     }
   };
 
-  // Gunakan nilai stageSize dari context
-  const stageWidth = stageSize.width || window.innerWidth;
-  const stageHeight = stageSize.height || window.innerHeight;
-
   // Tentukan style cursor berdasarkan mode
   const cursorStyle = isDrawingConnection ? "crosshair" : "default";
 
@@ -462,71 +449,82 @@ const DiagramCanvas: React.FC = () => {
       onContextMenu={handleContextMenu}
       style={{ cursor: cursorStyle }} // Tambahkan style cursor
     >
-      <Stage
-        ref={stageRef}
-        width={stageWidth}
-        height={stageHeight}
-        scaleX={zoomLevel}
-        scaleY={zoomLevel}
-        onClick={handleStageClick}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
+      <div
+        style={{
+          width: "100vw", // atau ukuran container yang Anda mau
+          height: "100vh",
+          overflow: "auto", // Scrollbar akan muncul jika Stage lebih besar
+          position: "relative",
+        }}
       >
-        <Layer>
-          <GridBackground width={5000} height={5000} spacing={20} />
-        </Layer>
-        <Layer>
-          {connections.map((connection) => (
-            <Connection key={connection.id} connection={connection} />
-          ))}
+        <Stage
+          ref={stageRef}
+          width={3000}
+          height={2000}
+          scaleX={zoomLevel}
+          scaleY={zoomLevel}
+          onClick={handleStageClick}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+        >
+          <Layer>
+            <GridBackground width={3000} height={2000} spacing={20} />
+          </Layer>
+          <Layer>
+            {connections.map((connection) => (
+              <Connection key={connection.id} connection={connection} />
+            ))}
 
-          {/* Render temporary connection line saat menggambar */}
-          {isDrawingConnection &&
-            tempConnectionPoints &&
-            (() => {
-              // Perbaikan: Gunakan IIFE untuk menghindari comparison type error
-              if (
-                connectionDrawingStyle === "arrow" ||
-                connectionDrawingStyle === "doubleArrow"
-              ) {
-                return (
-                  <Arrow
-                    points={tempConnectionPoints}
-                    stroke="#3B82F6"
-                    strokeWidth={2}
-                    dash={getDashArray(connectionDrawingStyle)}
-                    pointerLength={10}
-                    pointerWidth={10}
-                    pointerAtBeginning={
-                      connectionDrawingStyle === "doubleArrow"
-                    }
-                  />
-                );
-              } else {
-                return (
-                  <Line
-                    points={tempConnectionPoints}
-                    stroke="#3B82F6"
-                    strokeWidth={2}
-                    dash={getDashArray(connectionDrawingStyle)}
-                  />
-                );
-              }
-            })()}
+            {/* Render temporary connection line saat menggambar */}
+            {isDrawingConnection &&
+              tempConnectionPoints &&
+              (() => {
+                // Perbaikan: Gunakan IIFE untuk menghindari comparison type error
+                if (
+                  connectionDrawingStyle === "arrow" ||
+                  connectionDrawingStyle === "doubleArrow"
+                ) {
+                  return (
+                    <Arrow
+                      points={tempConnectionPoints}
+                      stroke="#3B82F6"
+                      strokeWidth={2}
+                      dash={getDashArray(connectionDrawingStyle)}
+                      pointerLength={10}
+                      pointerWidth={10}
+                      pointerAtBeginning={
+                        connectionDrawingStyle === "doubleArrow"
+                      }
+                    />
+                  );
+                } else {
+                  return (
+                    <Line
+                      points={tempConnectionPoints}
+                      stroke="#3B82F6"
+                      strokeWidth={2}
+                      dash={getDashArray(connectionDrawingStyle)}
+                    />
+                  );
+                }
+              })()}
 
-          {shapes.map((shape) => (
-            <DiagramShape
-              key={shape.id}
-              shape={shape}
-              isSelected={selectedIds.includes(shape.id)}
-              onSelect={() => setSelectedId(shape.id)}
-              onShiftSelect={() => toggleShapeSelection(shape.id)}
-              onChange={(newAttrs) => updateShapePosition(shape.id, newAttrs)}
-            />
-          ))}
-        </Layer>
-      </Stage>
+            {shapes.map((shape) => (
+              <DiagramShape
+                key={shape.id}
+                shape={shape}
+                isSelected={selectedIds.includes(shape.id)}
+                onSelect={() => setSelectedId(shape.id)}
+                onShiftSelect={() => toggleShapeSelection(shape.id)}
+                onChange={(newAttrs, batchHistory) => {
+  updateShapePosition(shape.id, newAttrs, batchHistory);
+}}
+              />
+            ))}
+          </Layer>
+        </Stage>
+      </div>
 
       {/* Render Context Menu */}
       <ContextMenu

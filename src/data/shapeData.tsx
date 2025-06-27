@@ -5,6 +5,7 @@ export const gsnElements: Shape[] = [
   {
     id: "gsn-goal-1",
     type: "goal1",
+    mainText: "Goals",
     title: "Goals",
     preview: (
       <svg
@@ -29,6 +30,7 @@ export const gsnElements: Shape[] = [
   },
   {
     id: "gsn-goal-2",
+    mainText: "Context",
     type: "goal2",
     title: "Context",
     preview: (
@@ -53,6 +55,7 @@ export const gsnElements: Shape[] = [
   {
     id: "gsn-goal-3",
     type: "goal3",
+    mainText: "Solution",
     title: "Solution",
     preview: (
       <svg
@@ -75,6 +78,7 @@ export const gsnElements: Shape[] = [
   },
   {
     id: "gsn-goal-4",
+    mainText: "Strategy",
     type: "goal4",
     title: "Strategy",
     preview: (
@@ -97,7 +101,8 @@ export const gsnElements: Shape[] = [
   {
     id: "gsn-goal-5",
     type: "goal5",
-    title: "Assumtions",
+    mainText: "Assumptions",
+    title: "Assumptions",
     preview: (
       <svg
         viewBox="62.69 199 97.89 56.82"
@@ -131,6 +136,7 @@ export const gsnElements: Shape[] = [
   },
   {
     id: "gsn-goal-6",
+    mainText: "Justifications",
     type: "goal6",
     title: "Justifications",
     preview: (
@@ -166,6 +172,7 @@ export const gsnElements: Shape[] = [
   },
   {
     id: "gsn-goal-7",
+    mainText: "",
     type: "goal7",
     title: "Undeveloped",
     preview: (
@@ -194,6 +201,7 @@ export const gsnElements: Shape[] = [
   },
   {
     id: "gsn-goal-8",
+    mainText: "Undeveloped Goal",
     type: "goal8",
     title: "Undeveloped Goal",
     preview: (
@@ -231,6 +239,7 @@ export const gsnExtensionElements: Shape[] = [
   {
     id: "gsn-ext-1",
     type: "extension1",
+    mainText: "",
     title: "Public Decorator",
     preview: (
       <svg
@@ -268,6 +277,7 @@ export const gsnExtensionElements: Shape[] = [
   },
   {
     id: "gsn-ext-2",
+    mainText: "Away Solution",
     type: "extension2",
     title: "Away Solution",
     preview: (
@@ -326,6 +336,7 @@ export const gsnExtensionElements: Shape[] = [
   },
   {
     id: "gsn-ext-3",
+    mainText: "Away Context",
     type: "extension3",
     title: "Away Context",
     preview: (
@@ -374,6 +385,7 @@ export const gsnExtensionElements: Shape[] = [
   },
   {
     id: "gsn-ext-4",
+    mainText: "Away Goal",
     type: "extension4",
     title: "Away Goal",
     preview: (
@@ -424,6 +436,7 @@ export const gsnExtensionElements: Shape[] = [
 export const sacmElements: Shape[] = [
   {
     id: "sacm-1",
+    mainText: "Claim",
     type: "sacm1",
     title: "Claim",
     preview: (
@@ -449,6 +462,7 @@ export const sacmElements: Shape[] = [
   },
   {
     id: "sacm-2",
+    mainText: "Argument Reasoning",
     type: "sacm2",
     title: "Argument Reasoning",
     preview: (
@@ -499,6 +513,7 @@ export const sacmElements: Shape[] = [
   },
   {
     id: "sacm-3",
+    mainText: "Artifact Reference",
     type: "sacm3",
     title: "Artifact Reference",
     preview: (
@@ -689,6 +704,7 @@ export const sacmElements: Shape[] = [
 export const sacmExtensionElements: Shape[] = [
   {
     id: "sacm-ext-1",
+    mainText: "Ascited Claim",
     type: "sacmExt1",
     title: "Ascited Claim",
     preview: (
@@ -844,6 +860,7 @@ export const sacmExtensionElements: Shape[] = [
   },
   {
     id: "sacm-ext-2",
+    mainText: "Argument Package Binding",
     type: "sacmExt2",
     title: "ArgumentPackageBinding",
     preview: (
@@ -925,6 +942,7 @@ export const sacmExtensionElements: Shape[] = [
   },
   {
     id: "sacm-ext-3",
+    mainText: "Argument Package Interface",
     type: "sacmExt3",
     title: "ArgumentPackageInterface",
     preview: (
@@ -1127,6 +1145,7 @@ export const sacmExtensionElements: Shape[] = [
   },
   {
     id: "sacm-ext-4",
+    mainText: "Argument Package",
     type: "sacmExt4",
     title: "ArgumentPackage",
     preview: (
@@ -1190,6 +1209,7 @@ export const sacmExtensionElements: Shape[] = [
   },
   {
     id: "sacm-ext-5",
+    mainText: "Axiomatic Claim",
     type: "sacmExt5",
     title: "Axiomatic Claim",
     preview: (
@@ -1274,6 +1294,7 @@ export const sacmExtensionElements: Shape[] = [
   },
   {
     id: "sacm-ext-6",
+    mainText: "Defeated Claim",
     type: "sacmExt6",
     title: "Defeated Claim",
     preview: (
@@ -1361,6 +1382,7 @@ export const sacmExtensionElements: Shape[] = [
   },
   {
     id: "sacm-ext-7",
+    mainText: "Assumed Claim",
     type: "sacmExt7",
     title: "Assumed Claim",
     preview: (
@@ -1563,6 +1585,7 @@ export const sacmExtensionElements: Shape[] = [
   },
   {
     id: "sacm-ext-8",
+    mainText: "NeedsSuport Claim",
     type: "sacmExt8",
     title: "NeedsSuport Claim",
     preview: (
@@ -1788,6 +1811,7 @@ export const sacmExtensionElements: Shape[] = [
   },
   {
     id: "sacm-ext-9",
+    mainText: "Abstract Artifact Reference",
     type: "sacmExt9",
     title: "Abstract Artifact Reference",
     preview: (
@@ -3115,6 +3139,7 @@ export const sacmExtensionElements: Shape[] = [
   },
   {
     id: "sacm-ext-10",
+    mainText: "Abstract Claim",
     type: "sacmExt10",
     title: "Abstract Claim",
     preview: (

@@ -108,12 +108,7 @@ export const useDiagram = () => {
           document.activeElement instanceof HTMLInputElement ||
           document.activeElement instanceof HTMLTextAreaElement ||
           (document.activeElement &&
-            document.activeElement.getAttribute("contenteditable") ===
-              "true") ||
-          (document.activeElement?.tagName === "TEXTAREA" &&
-            document.activeElement?.parentElement?.classList.contains(
-              "konvajs-content"
-            ));
+            document.activeElement.getAttribute("contenteditable") === "true");
 
         if (isTextInput) {
           // Jika kita masih di dalam field input, jangan hapus shape
