@@ -23,40 +23,46 @@ const downloadFile = (content: string | Blob, filename: string) => {
   }
 };
 
-// Export to PDF
-export const exportToPDF = async (stageRef: any) => {
-  // Check if stageRef is valid
-  if (!stageRef || !stageRef.current) {
-    console.error('Stage reference is not available:', stageRef);
-    throw new Error('Canvas reference is not available. Please try again.');
+// Export to PDF - IMPROVED with better canvas checking
+export const exportToPDF = async (stageRef: React.RefObject<any>) => {
+  console.log('PDF Export - Stage ref received:', stageRef);
+  console.log('PDF Export - Stage ref current:', stageRef?.current);
+  
+  // Better canvas validation
+  if (!stageRef) {
+    throw new Error('Stage reference is null. Make sure the stageRef is passed correctly.');
+  }
+  
+  if (!stageRef.current) {
+    throw new Error('Stage reference is not attached to any element. Make sure your canvas/stage component uses ref={stageRef}.');
+  }
+  
+  // Check if the stage has the required method
+  if (typeof stageRef.current.toDataURL !== 'function') {
+    console.log('Available methods on stage:', Object.getOwnPropertyNames(stageRef.current));
+    throw new Error('Stage element does not have toDataURL method. Make sure you are using a canvas or Konva stage.');
   }
   
   try {
     console.log('Beginning PDF export');
-    // Dynamically import jspdf to reduce bundle size
     const { default: jsPDF } = await import('jspdf');
     
-    // Get the stage as a data URL
     console.log('Getting stage data URL');
     const dataUrl = stageRef.current.toDataURL({ pixelRatio: 2 });
     
-    // Create a new PDF
     console.log('Creating PDF document');
     const pdf = new jsPDF({
       orientation: 'landscape',
       unit: 'px',
     });
     
-    // Calculate dimensions to fit the image
     const imgProps = pdf.getImageProperties(dataUrl);
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
     
-    // Add the image to the PDF
     console.log('Adding image to PDF');
     pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
     
-    // Save the PDF
     console.log('Saving PDF');
     pdf.save('diagram.pdf');
     console.log('PDF export complete');
@@ -66,25 +72,33 @@ export const exportToPDF = async (stageRef: any) => {
   }
 };
 
-// Export to PNG
+// Export to PNG - IMPROVED with better canvas checking
 export const exportToPNG = (stageRef: any) => {
-  // Check if stageRef is valid
-  if (!stageRef || !stageRef.current) {
-    console.error('Stage reference is not available:', stageRef);
-    throw new Error('Canvas reference is not available. Please try again.');
+  console.log('PNG Export - Stage ref received:', stageRef);
+  console.log('PNG Export - Stage ref current:', stageRef?.current);
+  
+  if (!stageRef) {
+    throw new Error('Stage reference is null. Make sure the stageRef is passed correctly.');
+  }
+  
+  if (!stageRef.current) {
+    throw new Error('Stage reference is not attached to any element. Make sure your canvas/stage component uses ref={stageRef}.');
+  }
+  
+  if (typeof stageRef.current.toDataURL !== 'function') {
+    console.log('Available methods on stage:', Object.getOwnPropertyNames(stageRef.current));
+    throw new Error('Stage element does not have toDataURL method. Make sure you are using a canvas or Konva stage.');
   }
   
   try {
     console.log('Beginning PNG export');
     
-    // Get the stage as a data URL with increased resolution
     console.log('Getting stage data URL');
     const dataUrl = stageRef.current.toDataURL({ 
       pixelRatio: 2,
       mimeType: 'image/png'
     });
     
-    // Download the PNG
     console.log('Downloading PNG');
     downloadFile(dataUrl, 'diagram.png');
     console.log('PNG export complete');
@@ -94,18 +108,16 @@ export const exportToPNG = (stageRef: any) => {
   }
 };
 
-// Export to JSON
+// Export to JSON - No canvas needed
 export const exportToJSON = (diagramData: DiagramData) => {
   try {
     console.log('Beginning JSON export');
     
-    // Create a simplified version without preview components (which can't be serialized)
     const simplifiedShapes = diagramData.shapes.map(shape => {
       const { preview, ...rest } = shape;
       return rest;
     });
     
-    // Create the export data
     const exportData = {
       shapes: simplifiedShapes,
       connections: diagramData.connections
@@ -121,22 +133,20 @@ export const exportToJSON = (diagramData: DiagramData) => {
   }
 };
 
-// Export to XML
+// Export to XML - No canvas needed
 export const exportToXML = (diagramData: DiagramData) => {
   try {
     console.log('Beginning XML export');
     
-    // Create XML structure
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     xml += '<diagram>\n';
     
-    // Add shapes
     xml += '  <shapes>\n';
     diagramData.shapes.forEach(shape => {
       xml += '    <shape>\n';
       xml += `      <id>${shape.id}</id>\n`;
       xml += `      <type>${shape.type}</type>\n`;
-      xml += `      <title>${shape.title}</title>\n`;
+      xml += `      <title>${escapeXML(shape.title)}</title>\n`;
       xml += `      <x>${shape.x}</x>\n`;
       xml += `      <y>${shape.y}</y>\n`;
       
@@ -159,13 +169,13 @@ export const exportToXML = (diagramData: DiagramData) => {
     });
     xml += '  </shapes>\n';
     
-    // Add connections
     xml += '  <connections>\n';
     diagramData.connections.forEach(connection => {
       xml += '    <connection>\n';
       xml += `      <id>${connection.id}</id>\n`;
       xml += `      <from>${connection.from}</from>\n`;
       xml += `      <to>${connection.to}</to>\n`;
+      xml += `      <style>${connection.style}</style>\n`;
       if (connection.points && connection.points.length > 0) {
         xml += '      <points>\n';
         for (let i = 0; i < connection.points.length; i += 2) {
@@ -190,7 +200,6 @@ export const exportToXML = (diagramData: DiagramData) => {
   }
 };
 
-// Helper function to escape special characters in XML
 function escapeXML(text: string): string {
   return text
     .replace(/&/g, '&amp;')
@@ -200,8 +209,8 @@ function escapeXML(text: string): string {
     .replace(/'/g, '&apos;');
 }
 
-// Main export function
-export const exportDiagram = async (format: string, stageRef: any, diagramData: DiagramData) => {
+// Main export function with better error handling
+export const exportDiagram = async (format: string, stageRef: any, diagramData: DiagramData): Promise<void> => {
   console.log(`Starting export in ${format} format`);
   console.log('Stage ref:', stageRef);
   console.log('Diagram data:', diagramData);
@@ -224,3 +233,5 @@ export const exportDiagram = async (format: string, stageRef: any, diagramData: 
       throw new Error('Unsupported export format. Please choose PDF, PNG, JSON, or XML.');
   }
 };
+
+export default exportDiagram;

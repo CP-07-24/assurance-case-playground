@@ -1,0 +1,66 @@
+{
+  "id": "building-access",
+  "title": "Security Assurance for Building Access Control System",
+  "elements": [
+    {
+      "id": "G1",
+      "type": "Goal",
+      "description": "Unauthorized access prevented",
+      "children": ["S1", "S2"]
+    },
+    {
+      "id": "S1",
+      "type": "Strategy",
+      "description": "Multi-factor authentication",
+      "children": ["SG1", "SG2"]
+    },
+    {
+      "id": "S2",
+      "type": "Strategy",
+      "description": "Physical security measures",
+      "children": ["SG3"]
+    },
+    {
+      "id": "SG1",
+      "type": "SubGoal",
+      "description": "Biometric recognition accuracy",
+      "children": ["E1"]
+    },
+    {
+      "id": "SG2",
+      "type": "SubGoal",
+      "description": "Access token security",
+      "children": ["E2"]
+    },
+    {
+      "id": "SG3",
+      "type": "SubGoal",
+      "description": "Tamper-proof hardware",
+      "children": ["E3"]
+    },
+    {
+      "id": "E1",
+      "type": "Evidence",
+      "description": "False acceptance rate < 0.1%",
+      "children": []
+    },
+    {
+      "id": "E2",
+      "type": "Evidence",
+      "description": "Encryption certification (FIPS 140-2)",
+      "children": []
+    },
+    {
+      "id": "E3",
+      "type": "Evidence",
+      "description": "Physical stress test reports",
+      "children": []
+    },
+    {
+      "id": "C1",
+      "type": "Context",
+      "description": "High-security research facility",
+      "children": []
+    }
+  ]
+}

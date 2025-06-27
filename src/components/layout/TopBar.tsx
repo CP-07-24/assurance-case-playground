@@ -1,4 +1,4 @@
-"use client"; // Wajib karena menggunakan hooks dan interaktivitas
+"use client";
 
 import React, { useState, useEffect } from "react";
 
@@ -19,6 +19,12 @@ import {
 import { User } from "firebase/auth";
 
 import Logo from "../../assets/logoeditor.png";
+
+// IMPORT DOCUMENTATION MODAL
+import { GuidanceModal } from "../documentation";
+
+// IMPORT GUIDANCE DIALOG
+import GuidanceDialog from "../dialogs/GuidanceDialog";
 
 const TopBar: React.FC = () => {
   const {
@@ -54,6 +60,13 @@ const TopBar: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
 
   const [loading, setLoading] = useState(true);
+  
+  // STATE UNTUK DOCUMENTATION MODAL
+  const [showDocumentationModal, setShowDocumentationModal] = useState(false);
+  const [documentationSection, setDocumentationSection] = useState<string>('introduction');
+
+  // STATE UNTUK GUIDANCE DIALOG
+  const [isGuidanceDialogOpen, setIsGuidanceDialogOpen] = useState(false);
 
   // Pantau perubahan status autentikasi
 
@@ -81,6 +94,19 @@ const TopBar: React.FC = () => {
     // Buka URL dasar di tab baru
 
     window.open(baseUrl, "_blank");
+  };
+
+  // FUNGSI UNTUK MEMBUKA DOCUMENTATION MODAL
+  const openDocumentationModal = (section: string = 'introduction') => {
+    setDocumentationSection(section);
+    setShowDocumentationModal(true);
+    setActiveMenu(null);
+  };
+
+  // FUNGSI UNTUK MEMBUKA GUIDANCE DIALOG
+  const handleGuidanceClick = () => {
+    setActiveMenu(null);
+    setIsGuidanceDialogOpen(true);
   };
 
   // Handle keyboard shortcuts
@@ -288,6 +314,7 @@ const TopBar: React.FC = () => {
     },
   ];
 
+  // HELP/DOCUMENTATION MENU ITEMS
   const helpMenuItems = [
     {
       label: "Keyboard Shortcuts",
@@ -365,17 +392,18 @@ const TopBar: React.FC = () => {
   };
 
   return (
-    <div
-      className="flex items-center justify-between bg-white border-b border-gray-200 h-12 px-3"
-      data-preserve-selection="true"
-    >
-      <div className="flex items-center">
-        <div
-          className="flex items-center cursor-pointer"
-          onClick={toggleSidebar}
-        >
-          <img src={Logo} alt="Editor Logo" className="h-8 w-auto" />
-        </div>
+    <>
+      <div
+        className="flex items-center justify-between bg-white border-b border-gray-200 h-12 px-3"
+        data-preserve-selection="true"
+      >
+        <div className="flex items-center">
+          <div
+            className="flex items-center cursor-pointer"
+            onClick={toggleSidebar}
+          >
+            <img src={Logo} alt="Editor Logo" className="h-8 w-auto" />
+          </div>
 
         <div className="flex ml-6 space-x-1">
           {/* PROJECT Button - Direct action without dropdown */}
