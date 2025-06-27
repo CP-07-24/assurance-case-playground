@@ -16,9 +16,6 @@ import Logo from "../../assets/logoeditor.png";
 // IMPORT DOCUMENTATION MODAL
 import { GuidanceModal } from "../documentation";
 
-// IMPORT GUIDANCE DIALOG (dari habli-guidance branch)
-import GuidanceDialog from "../dialogs/GuidanceDialog";
-
 const TopBar: React.FC = () => {
   const {
     toggleSidebar,
@@ -412,12 +409,6 @@ const TopBar: React.FC = () => {
         isOpen={showDocumentationModal} 
         onClose={() => setShowDocumentationModal(false)}
         initialSection={documentationSection}
-      />
-
-      {/* GUIDANCE DIALOG (dari habli-guidance branch) */}
-      <GuidanceDialog
-        isOpen={isGuidanceDialogOpen}
-        onClose={() => setIsGuidanceDialogOpen(false)}
       />
     </>
   );
