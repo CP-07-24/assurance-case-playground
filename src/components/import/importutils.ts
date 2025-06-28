@@ -123,14 +123,15 @@ export const parseXMLDiagram = (content: string): DiagramData => {
       shapes.push(shape as ShapeOnCanvas);
     });
     
-    // Parse connections
+      // Parse connections
     const connectionElements = xmlDoc.querySelectorAll('diagram > connections > connection');
     connectionElements.forEach((element) => {
       const connection: Connection = {
         id: getElementValue(element, 'id') || generateId(),
         from: getElementValue(element, 'from') || '',
         to: getElementValue(element, 'to') || '',
-        points: []
+        points: [],
+        style: (getElementValue(element, 'style') as Connection["style"]) || 'line' // Tambahkan default style
       };
       
       // Parse points
