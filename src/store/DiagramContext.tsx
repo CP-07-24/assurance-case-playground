@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useReducer, useState } from "react";
 import { ShapeOnCanvas, Connection } from "../types/shapes";
 import { getDefaultShapeSize } from "../utils/shapeUtils";
+import { exportToPDF, exportToPNG, exportToJSON, exportToXML } from "../components/export/exportutils";
+import { importDiagram as importDiagramUtil } from "../components/import/importutils";
 
 // Tambahkan interface TextElementProps
 export interface TextElementProps {
@@ -111,6 +113,8 @@ interface DiagramContextType extends DiagramState {
     shapeId: string,
     point: string
   ) => void;
+  exportDiagram: (format: string, stageRef?: any) => Promise<void>;
+  importDiagram: (content: string, format: 'json' | 'xml') => void;
 }
 
 // initialState hanya berisi properti data yang sesuai dengan DiagramState
@@ -175,6 +179,7 @@ type DiagramAction =
   | { type: "SET_SELECTED_CONNECTION"; payload: string | null }
   | { type: "DELETE_SHAPE"; payload: string }
   | { type: "DELETE_SHAPES"; payload: string[] }
+  | { type: "CLEAR_DIAGRAM" }
   | { type: "UNDO" }
   | { type: "REDO" }
   | { type: "SET_ZOOM"; payload: number }
@@ -1161,6 +1166,64 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     dispatch({ type: "CANCEL_DRAWING_CONNECTION" });
   };
 
+  const exportDiagram = async (format: string, stageRef?: any) => {
+    try {
+      const diagramData = {
+        shapes: state.shapes,
+        connections: state.connections
+      };
+
+      switch (format.toLowerCase()) {
+        case 'pdf':
+          if (!stageRef) {
+            throw new Error('Stage reference is required for PDF export');
+          }
+          await exportToPDF(stageRef);
+          break;
+        case 'png':
+          if (!stageRef) {
+            throw new Error('Stage reference is required for PNG export');
+          }
+          exportToPNG(stageRef);
+          break;
+        case 'json':
+          exportToJSON(diagramData);
+          break;
+        case 'xml':
+          exportToXML(diagramData);
+          break;
+        default:
+          throw new Error(`Unsupported export format: ${format}`);
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      throw error;
+    }
+  };
+  const importDiagramFunction = (content: string, format: 'json' | 'xml') => {
+    try {
+      const { shapes, connections } = importDiagramUtil(content, format);
+      
+      // Clear existing diagram
+      dispatch({ type: "CLEAR_DIAGRAM" });
+      
+      // Add imported shapes
+      shapes.forEach(shape => {
+        dispatch({ type: "ADD_SHAPE", payload: shape });
+      });
+      
+      // Add imported connections
+      connections.forEach(connection => {
+        dispatch({ type: "ADD_CONNECTION", payload: connection });
+      });
+      
+    } catch (error) {
+      console.error('Import error:', error);
+      throw error;
+    }
+  };
+
+
   // Perbaikan: Tambahkan convertConnectionEndpoint ke contextValue
   const contextValue: DiagramContextType = {
     ...state,
@@ -1205,6 +1268,8 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
     convertConnectionEndpoint,
     selectedIds:
       selectedShapeIds.length > 0 ? selectedShapeIds : state.selectedIds,
+    exportDiagram,
+    importDiagram: importDiagramFunction,
   };
 
   return (
