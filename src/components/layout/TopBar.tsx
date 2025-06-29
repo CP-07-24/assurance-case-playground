@@ -4,7 +4,8 @@ import React, { useState, useEffect } from "react";
 import { Edit, HelpCircle, Lightbulb, FolderKanban } from "lucide-react";
 import { useDiagramContext } from "../../store/DiagramContext";
 import MenuDropdown from "../ui/MenuDropdown";
-import GuidanceDialog from "../dialogs/GuidanceDialog"; // ← TAMBAHAN BARU
+import GuidanceDialog from "../dialogs/GuidanceDialog";
+import DocumentationModal from "../documentation/DocumentationModal"; // ← TAMBAHAN BARU
 import { FcGoogle } from "react-icons/fc";
 import {
   signInWithGoogle,
@@ -34,7 +35,8 @@ const TopBar: React.FC = () => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isGuidanceDialogOpen, setIsGuidanceDialogOpen] = useState(false); // ← TAMBAHAN BARU
+  const [isGuidanceDialogOpen, setIsGuidanceDialogOpen] = useState(false);
+  const [isDocumentationModalOpen, setIsDocumentationModalOpen] = useState(false); // ← TAMBAHAN BARU
 
   // Pantau perubahan status autentikasi
   useEffect(() => {
@@ -180,29 +182,6 @@ const TopBar: React.FC = () => {
     },
   ];
 
-  const helpMenuItems = [
-    {
-      label: "Keyboard Shortcuts",
-      onClick: () => console.log("Keyboard Shortcuts"),
-      shortcut: "",
-    },
-    {
-      label: "User Guide",
-      onClick: () => console.log("User Guide"),
-      shortcut: "",
-    },
-    {
-      label: "Report Bug",
-      onClick: () => console.log("Report Bug"),
-      shortcut: "",
-    },
-    {
-      label: "Contact Support",
-      onClick: () => console.log("Contact Support"),
-      shortcut: "",
-    },
-  ];
-
   const handleMenuClick = (menuId: string) => {
     setActiveMenu(activeMenu === menuId ? null : menuId);
   };
@@ -211,10 +190,16 @@ const TopBar: React.FC = () => {
     setActiveMenu(null);
   };
 
-  // ← TAMBAHAN BARU: Function untuk handle guidance click
+  // Function untuk handle guidance click
   const handleGuidanceClick = () => {
     closeMenu(); // Tutup dropdown yang terbuka
     setIsGuidanceDialogOpen(true);
+  };
+
+  // ← TAMBAHAN BARU: Function untuk handle documentation click
+  const handleDocumentationClick = () => {
+    closeMenu(); // Tutup dropdown yang terbuka
+    setIsDocumentationModalOpen(true);
   };
 
   const handleSignOut = async () => {
@@ -276,36 +261,31 @@ const TopBar: React.FC = () => {
               )}
             </div>
 
-            {/* DOCUMENTATION Menu */}
-            <div className="relative">
-              <button
-                className={`px-3 py-1.5 text-sm font-medium ${
-                  activeMenu === "help" ? "bg-gray-100" : "hover:bg-gray-50"
-                } rounded-md`}
-                onClick={() => handleMenuClick("help")}
-              >
-                <div className="flex items-center">
-                  <HelpCircle size={16} className="mr-1.5" />
-                  DOCUMENTATION
-                </div>
-              </button>
-              {activeMenu === "help" && (
-                <MenuDropdown items={helpMenuItems} onClose={closeMenu} />
-              )}
-            </div>
-
-            {/* GUIDANCE Button - ← DIMODIFIKASI */}
+            {/* DOCUMENTATION Button - ← DIMODIFIKASI */}
             <div className="relative">
               <button
                 className="px-3 py-1.5 text-sm font-medium hover:bg-gray-50 rounded-md"
-                onClick={handleGuidanceClick} // ← GANTI dari handleMenuClick ke handleGuidanceClick
+                onClick={handleDocumentationClick} // ← GANTI dari handleMenuClick ke handleDocumentationClick
+              >
+                <div className="flex items-center">
+                  <HelpCircle size={16} className="mr-1.5" />
+                  NOTATION GUIDE
+                </div>
+              </button>
+              {/* ← HAPUS MenuDropdown untuk documentation */}
+            </div>
+
+            {/* GUIDANCE Button */}
+            <div className="relative">
+              <button
+                className="px-3 py-1.5 text-sm font-medium hover:bg-gray-50 rounded-md"
+                onClick={handleGuidanceClick}
               >
                 <div className="flex items-center">
                   <Lightbulb size={16} className="mr-1.5" />
                   APP GUIDE
                 </div>
               </button>
-              {/* ← HAPUS MenuDropdown untuk guidance */}
             </div>
           </div>
         </div>
@@ -351,10 +331,16 @@ const TopBar: React.FC = () => {
         </div>
       </div>
 
-      {/* ← TAMBAHAN BARU: Guidance Dialog */}
+      {/* Guidance Dialog */}
       <GuidanceDialog
         isOpen={isGuidanceDialogOpen}
         onClose={() => setIsGuidanceDialogOpen(false)}
+      />
+
+      {/* ← TAMBAHAN BARU: Documentation Modal */}
+      <DocumentationModal
+        isOpen={isDocumentationModalOpen}
+        onClose={() => setIsDocumentationModalOpen(false)}
       />
     </>
   );
