@@ -3,13 +3,15 @@ import { DocumentationContentProps } from './types';
 
 const DocumentationContent: React.FC<DocumentationContentProps> = ({ content }) => {
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="p-6">
+    <div className="flex-1 overflow-y-auto bg-white">
+      <div className="p-8">
         <div 
-          className="prose max-w-none"
+          className="prose prose-lg max-w-none"
           dangerouslySetInnerHTML={{ __html: content }}
           style={{
-            lineHeight: '1.6',
+            lineHeight: '1.8',
+            fontSize: '16px',
+            color: '#374151'
           }}
         />
       </div>

@@ -2,17 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { DocumentationModalProps } from './types';
 import { documentationData, navigationStructure } from './data';
-import GuidanceNavigation from './DocumentationNavigation';
+import DocumentationNavigation from './DocumentationNavigation';
 import DocumentationContent from './DocumentationContent';
 import DocumentationFooter from './DocumentationFooter';
 
 const DocumentationModal: React.FC<DocumentationModalProps> = ({ 
   isOpen, 
   onClose, 
-  initialSection = 'introduction' 
+  initialSection = 'introduction-gsn' 
 }) => {
   const [activeSection, setActiveSection] = useState<string>(initialSection);
-  const [expandedItems, setExpandedItems] = useState<string[]>(['getting-started']);
+  const [expandedItems, setExpandedItems] = useState<string[]>(['gsn-section']); // Default expand GSN section
 
   useEffect(() => {
     if (isOpen && initialSection) {
@@ -28,7 +28,7 @@ const DocumentationModal: React.FC<DocumentationModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg w-5/6 h-5/6 max-w-6xl max-h-[90vh] shadow-2xl overflow-hidden flex">
         {/* Sidebar Navigation */}
-        <GuidanceNavigation
+        <DocumentationNavigation
           navigationStructure={navigationStructure}
           activeSection={activeSection}
           expandedItems={expandedItems}
@@ -47,7 +47,7 @@ const DocumentationModal: React.FC<DocumentationModalProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <h1 className="text-xl font-semibold text-gray-800">
-              {currentContent?.title}
+              NOTATION GUIDE
             </h1>
             <button
               onClick={onClose}
@@ -61,7 +61,7 @@ const DocumentationModal: React.FC<DocumentationModalProps> = ({
           <DocumentationContent content={currentContent?.content || ''} />
 
           {/* Footer */}
-          <DocumentationFooter />
+          <DocumentationFooter showNavigation={false} />
         </div>
       </div>
     </div>
