@@ -5,65 +5,77 @@ interface DiagramData {
   connections: Connection[];
 }
 
+// Generate unique ID
+const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+// Helper function to get error message
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+};
+
 // Parse JSON file content
 export const parseJSONDiagram = (content: string): DiagramData => {
   try {
-    const parsed = JSON.parse(content);
+    const data = JSON.parse(content);
     
-    // Basic validation
-    if (!parsed.shapes || !Array.isArray(parsed.shapes)) {
-      throw new Error('Invalid JSON format: shapes array not found');
+    // Validate structure
+    if (!data || typeof data !== 'object') {
+      throw new Error('Format JSON tidak valid');
     }
     
-    if (!parsed.connections || !Array.isArray(parsed.connections)) {
-      throw new Error('Invalid JSON format: connections array not found');
+    if (!data.shapes || !Array.isArray(data.shapes)) {
+      throw new Error('Format JSON tidak valid: properti "shapes" diperlukan dan harus berupa array');
     }
     
-    // Further validation of shapes
-    const shapes = parsed.shapes.map((shape: any) => {
-      if (!shape.id || !shape.type || !shape.title) {
-        throw new Error('Invalid shape data: missing required properties');
+    // Process shapes
+    const shapes: ShapeOnCanvas[] = data.shapes.map((shape: any, index: number) => {
+      if (!shape || typeof shape !== 'object') {
+        throw new Error(`Shape ke-${index + 1} tidak valid`);
       }
       
-      // Create a proper ShapeOnCanvas object
       return {
-        id: shape.id,
-        type: shape.type,
-        title: shape.title,
-        x: shape.x !== undefined ? Number(shape.x) : 0,
-        y: shape.y !== undefined ? Number(shape.y) : 0,
-        width: shape.width !== undefined ? Number(shape.width) : 100,
-        height: shape.height !== undefined ? Number(shape.height) : 50,
-        cornerRadius: shape.cornerRadius !== undefined ? Number(shape.cornerRadius) : 0,
+        id: shape.id || generateId(),
+        type: shape.type || 'unknown',
+        title: shape.title || 'Untitled',
+        x: typeof shape.x === 'number' ? shape.x : 0,
+        y: typeof shape.y === 'number' ? shape.y : 0,
+        width: typeof shape.width === 'number' ? shape.width : 100,
+        height: typeof shape.height === 'number' ? shape.height : 50,
+        cornerRadius: typeof shape.cornerRadius === 'number' ? shape.cornerRadius : 0,
         text: shape.text || '',
+        mainText: shape.mainText || shape.text || '', // Add mainText property
         idText: shape.idText || '',
         value: shape.value || '',
         fontFamily: shape.fontFamily || 'Arial',
-        fontSize: shape.fontSize !== undefined ? Number(shape.fontSize) : 14,
+        fontSize: typeof shape.fontSize === 'number' ? shape.fontSize : 14,
         fontWeight: shape.fontWeight || 'normal',
         fontStyle: shape.fontStyle || 'normal',
         align: shape.align || 'center',
         textDecoration: shape.textDecoration || 'none',
         interLine: shape.interLine || 'normal',
         description: shape.description || '',
-        descFontSize: shape.descFontSize !== undefined ? Number(shape.descFontSize) : 12,
+        descFontSize: typeof shape.descFontSize === 'number' ? shape.descFontSize : 12,
         descFontWeight: shape.descFontWeight || 'normal',
         descInterLine: shape.descInterLine || 'normal',
-        // We don't import the preview since it's a React component
+        // Reset preview component
         preview: null
       } as ShapeOnCanvas;
     });
     
-    // Validate connections
-    const connections = parsed.connections.map((connection: any) => {
-      if (!connection.id || !connection.from || !connection.to) {
-        throw new Error('Invalid connection data: missing required properties');
+    // Process connections
+    const connections: Connection[] = (data.connections || []).map((connection: any, index: number) => {
+      if (!connection || typeof connection !== 'object') {
+        throw new Error(`Connection ke-${index + 1} tidak valid`);
       }
       
       return {
-        id: connection.id,
-        from: connection.from,
-        to: connection.to,
+        id: connection.id || generateId(),
+        from: connection.from || '',
+        to: connection.to || '',
+        style: connection.style || 'arrow',
         points: Array.isArray(connection.points) ? connection.points : []
       } as Connection;
     });
@@ -71,7 +83,10 @@ export const parseJSONDiagram = (content: string): DiagramData => {
     return { shapes, connections };
   } catch (error) {
     console.error('Error parsing JSON:', error);
-    throw new Error(`Failed to parse JSON file: ${error}`);
+    if (error instanceof SyntaxError) {
+      throw new Error('File JSON tidak valid: Format JSON rusak');
+    }
+    throw new Error(`Gagal parsing file JSON: ${getErrorMessage(error)}`);
   }
 };
 
@@ -84,88 +99,168 @@ export const parseXMLDiagram = (content: string): DiagramData => {
     // Check for parsing errors
     const parserError = xmlDoc.querySelector('parsererror');
     if (parserError) {
-      throw new Error('XML parsing error');
+      throw new Error('File XML tidak valid: Format XML rusak');
     }
     
     const shapes: ShapeOnCanvas[] = [];
     const connections: Connection[] = [];
     
+    // Helper function to get element value
+    const getElementValue = (parent: Element, tagName: string): string => {
+      const element = parent.querySelector(tagName);
+      return element ? (element.textContent || '').trim() : '';
+    };
+    
     // Parse shapes
     const shapeElements = xmlDoc.querySelectorAll('diagram > shapes > shape');
-    shapeElements.forEach((element) => {
-      const shape: Partial<ShapeOnCanvas> = {
-        id: getElementValue(element, 'id') || generateId(),
-        type: getElementValue(element, 'type') || 'unknown',
-        title: getElementValue(element, 'title') || 'Untitled',
-        x: parseFloat(getElementValue(element, 'x') || '0'),
-        y: parseFloat(getElementValue(element, 'y') || '0'),
-        width: parseFloat(getElementValue(element, 'width') || '100'),
-        height: parseFloat(getElementValue(element, 'height') || '50'),
-        cornerRadius: parseFloat(getElementValue(element, 'cornerRadius') || '0'),
-        text: getElementValue(element, 'text') || '',
-        idText: getElementValue(element, 'idText') || '',
-        value: getElementValue(element, 'value') || '',
-        fontFamily: getElementValue(element, 'fontFamily') || 'Arial',
-        fontSize: parseFloat(getElementValue(element, 'fontSize') || '14'),
-        fontWeight: getElementValue(element, 'fontWeight') || 'normal',
-        fontStyle: getElementValue(element, 'fontStyle') || 'normal',
-        align: getElementValue(element, 'align') as any || 'center',
-        textDecoration: getElementValue(element, 'textDecoration') || 'none',
-        interLine: getElementValue(element, 'interLine') || 'normal',
-        description: getElementValue(element, 'description') || '',
-        descFontSize: parseFloat(getElementValue(element, 'descFontSize') || '12'),
-        descFontWeight: getElementValue(element, 'descFontWeight') || 'normal',
-        descInterLine: getElementValue(element, 'descInterLine') || 'normal',
-        // We don't import the preview since it's a React component
-        preview: null
-      };
-      
-      shapes.push(shape as ShapeOnCanvas);
+    shapeElements.forEach((element, index) => {
+      try {
+        const shape: ShapeOnCanvas = {
+          id: getElementValue(element, 'id') || generateId(),
+          type: getElementValue(element, 'type') || 'unknown',
+          title: getElementValue(element, 'title') || 'Untitled',
+          x: parseFloat(getElementValue(element, 'x') || '0'),
+          y: parseFloat(getElementValue(element, 'y') || '0'),
+          width: parseFloat(getElementValue(element, 'width') || '100'),
+          height: parseFloat(getElementValue(element, 'height') || '50'),
+          cornerRadius: parseFloat(getElementValue(element, 'cornerRadius') || '0'),
+          text: getElementValue(element, 'text') || '',
+          mainText: getElementValue(element, 'mainText') || getElementValue(element, 'text') || '', // Add mainText property
+          idText: getElementValue(element, 'idText') || '',
+          value: getElementValue(element, 'value') || '',
+          fontFamily: getElementValue(element, 'fontFamily') || 'Arial',
+          fontSize: parseFloat(getElementValue(element, 'fontSize') || '14'),
+          fontWeight: getElementValue(element, 'fontWeight') || 'normal',
+          fontStyle: getElementValue(element, 'fontStyle') || 'normal',
+          align: getElementValue(element, 'align') as any || 'center',
+          textDecoration: getElementValue(element, 'textDecoration') || 'none',
+          interLine: getElementValue(element, 'interLine') || 'normal',
+          description: getElementValue(element, 'description') || '',
+          descFontSize: parseFloat(getElementValue(element, 'descFontSize') || '12'),
+          descFontWeight: getElementValue(element, 'descFontWeight') || 'normal',
+          descInterLine: getElementValue(element, 'descInterLine') || 'normal',
+          // Reset preview component
+          preview: null
+        };
+        
+        shapes.push(shape);
+      } catch (error) {
+        console.warn(`Warning: Skipping shape ${index + 1} due to parsing error:`, error);
+      }
     });
     
     // Parse connections
     const connectionElements = xmlDoc.querySelectorAll('diagram > connections > connection');
-    connectionElements.forEach((element) => {
-      const connection: Connection = {
-        id: getElementValue(element, 'id') || generateId(),
-        from: getElementValue(element, 'from') || '',
-        to: getElementValue(element, 'to') || '',
-        points: []
-      };
-      
-      // Parse points
-      const pointElements = element.querySelectorAll('points > point');
-      pointElements.forEach((point) => {
-        const x = parseFloat(point.getAttribute('x') || '0');
-        const y = parseFloat(point.getAttribute('y') || '0');
-        connection.points.push(x, y);
-      });
-      
-      connections.push(connection);
+    connectionElements.forEach((element, index) => {
+      try {
+        // Parse points if they exist
+        const points: number[] = [];
+        const pointElements = element.querySelectorAll('points > point');
+        pointElements.forEach(pointEl => {
+          const x = parseFloat(pointEl.getAttribute('x') || '0');
+          const y = parseFloat(pointEl.getAttribute('y') || '0');
+          points.push(x, y);
+        });
+        
+        const connection: Connection = {
+          id: getElementValue(element, 'id') || generateId(),
+          from: getElementValue(element, 'from'),
+          to: getElementValue(element, 'to'),
+          style: (getElementValue(element, 'style') as Connection['style']) || 'arrow',
+          points: points.length > 0 ? points : []
+        };
+        
+        connections.push(connection);
+      } catch (error) {
+        console.warn(`Warning: Skipping connection ${index + 1} due to parsing error:`, error);
+      }
     });
-    
-    // Validate imported data
-    if (shapes.length === 0) {
-      throw new Error('No valid shapes found in the XML');
-    }
     
     return { shapes, connections };
   } catch (error) {
     console.error('Error parsing XML:', error);
-    throw new Error(`Failed to parse XML file: ${error}`);
+    throw new Error(`Gagal parsing file XML: ${getErrorMessage(error)}`);
   }
 };
 
-// Helper function to get text content of an XML element
-function getElementValue(parent: Element, tagName: string): string | null {
-  const element = parent.querySelector(tagName);
-  return element ? element.textContent : null;
-}
+// Validate imported data
+export const validateDiagramData = (data: DiagramData): boolean => {
+  if (!data || typeof data !== 'object') {
+    throw new Error('Data diagram tidak valid');
+  }
+  
+  if (!Array.isArray(data.shapes)) {
+    throw new Error('Shapes harus berupa array');
+  }
+  
+  if (!Array.isArray(data.connections)) {
+    throw new Error('Connections harus berupa array');
+  }
+  
+  // Validate each shape has required fields
+  data.shapes.forEach((shape, index) => {
+    if (!shape.id) {
+      throw new Error(`Shape ke-${index + 1} tidak memiliki ID`);
+    }
+    if (typeof shape.x !== 'number' || typeof shape.y !== 'number') {
+      throw new Error(`Shape ke-${index + 1} tidak memiliki koordinat yang valid`);
+    }
+  });
+  
+  // Validate each connection has required fields
+  data.connections.forEach((connection, index) => {
+    if (!connection.id) {
+      throw new Error(`Connection ke-${index + 1} tidak memiliki ID`);
+    }
+    if (!connection.from || !connection.to) {
+      throw new Error(`Connection ke-${index + 1} tidak memiliki from/to yang valid`);
+    }
+  });
+  
+  return true;
+};
 
-// Helper function to generate a unique ID
-function generateId(): string {
-  return `id-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-}
+// Process file berdasarkan extension
+export const processImportFile = async (file: File): Promise<DiagramData> => {
+  const extension = file.name.toLowerCase().split('.').pop();
+  
+  if (!extension || !['json', 'xml'].includes(extension)) {
+    throw new Error('Format file tidak didukung. Gunakan file .json atau .xml');
+  }
+  
+  const content = await file.text();
+  
+  let diagramData: DiagramData;
+  
+  if (extension === 'json') {
+    diagramData = parseJSONDiagram(content);
+  } else {
+    diagramData = parseXMLDiagram(content);
+  }
+  
+  // Validate data
+  validateDiagramData(diagramData);
+  
+  return diagramData;
+};
+
+// Get file information
+export const getFileInfo = (file: File) => {
+  const extension = file.name.toLowerCase().split('.').pop();
+  const size = file.size;
+  const sizeText = size < 1024 ? `${size} B` : 
+                  size < 1048576 ? `${(size / 1024).toFixed(1)} KB` :
+                  `${(size / 1048576).toFixed(1)} MB`;
+  
+  return {
+    name: file.name,
+    extension,
+    size,
+    sizeText,
+    type: file.type,
+    isSupported: ['json', 'xml'].includes(extension || '')
+  };
+};
 
 // Main import function
 export const importDiagram = (content: string, format: 'json' | 'xml'): DiagramData => {
