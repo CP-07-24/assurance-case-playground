@@ -23,12 +23,19 @@ const downloadFile = (content: string | Blob, filename: string) => {
   }
 };
 
-// Export to PDF
+// Helper function to get error message
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+};
+
+// Export to PDF dengan proper error handling
 export const exportToPDF = async (stageRef: any) => {
-  // Check if stageRef is valid
   if (!stageRef || !stageRef.current) {
     console.error('Stage reference is not available:', stageRef);
-    throw new Error('Canvas reference is not available. Please try again.');
+    throw new Error('Canvas tidak tersedia. Silakan coba lagi.');
   }
   
   try {
@@ -62,16 +69,15 @@ export const exportToPDF = async (stageRef: any) => {
     console.log('PDF export complete');
   } catch (error) {
     console.error('Error exporting to PDF:', error);
-    throw new Error(`Failed to export as PDF: ${error}`);
+    throw new Error(`Gagal export PDF: ${getErrorMessage(error)}`);
   }
 };
 
-// Export to PNG
+// Export to PNG dengan proper error handling
 export const exportToPNG = (stageRef: any) => {
-  // Check if stageRef is valid
   if (!stageRef || !stageRef.current) {
     console.error('Stage reference is not available:', stageRef);
-    throw new Error('Canvas reference is not available. Please try again.');
+    throw new Error('Canvas tidak tersedia. Silakan coba lagi.');
   }
   
   try {
@@ -90,11 +96,11 @@ export const exportToPNG = (stageRef: any) => {
     console.log('PNG export complete');
   } catch (error) {
     console.error('Error exporting to PNG:', error);
-    throw new Error(`Failed to export as PNG: ${error}`);
+    throw new Error(`Gagal export PNG: ${getErrorMessage(error)}`);
   }
 };
 
-// Export to JSON
+// Export to JSON dengan metadata
 export const exportToJSON = (diagramData: DiagramData) => {
   try {
     console.log('Beginning JSON export');
@@ -105,10 +111,16 @@ export const exportToJSON = (diagramData: DiagramData) => {
       return rest;
     });
     
-    // Create the export data
+    // Create the export data with metadata
     const exportData = {
       shapes: simplifiedShapes,
-      connections: diagramData.connections
+      connections: diagramData.connections,
+      metadata: {
+        exportDate: new Date().toISOString(),
+        version: '1.0',
+        totalShapes: simplifiedShapes.length,
+        totalConnections: diagramData.connections.length
+      }
     };
     
     console.log('Exporting diagram data:', exportData);
@@ -117,11 +129,11 @@ export const exportToJSON = (diagramData: DiagramData) => {
     console.log('JSON export complete');
   } catch (error) {
     console.error('Error exporting to JSON:', error);
-    throw new Error(`Failed to export as JSON: ${error}`);
+    throw new Error(`Gagal export JSON: ${getErrorMessage(error)}`);
   }
 };
 
-// Export to XML
+// Export to XML dengan proper structure
 export const exportToXML = (diagramData: DiagramData) => {
   try {
     console.log('Beginning XML export');
@@ -130,13 +142,21 @@ export const exportToXML = (diagramData: DiagramData) => {
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     xml += '<diagram>\n';
     
+    // Add metadata
+    xml += '  <metadata>\n';
+    xml += `    <exportDate>${new Date().toISOString()}</exportDate>\n`;
+    xml += '    <version>1.0</version>\n';
+    xml += `    <totalShapes>${diagramData.shapes.length}</totalShapes>\n`;
+    xml += `    <totalConnections>${diagramData.connections.length}</totalConnections>\n`;
+    xml += '  </metadata>\n';
+    
     // Add shapes
     xml += '  <shapes>\n';
     diagramData.shapes.forEach(shape => {
       xml += '    <shape>\n';
       xml += `      <id>${shape.id}</id>\n`;
       xml += `      <type>${shape.type}</type>\n`;
-      xml += `      <title>${shape.title}</title>\n`;
+      xml += `      <title>${escapeXML(shape.title || '')}</title>\n`;
       xml += `      <x>${shape.x}</x>\n`;
       xml += `      <y>${shape.y}</y>\n`;
       
@@ -144,6 +164,7 @@ export const exportToXML = (diagramData: DiagramData) => {
       if (shape.height) xml += `      <height>${shape.height}</height>\n`;
       if (shape.cornerRadius) xml += `      <cornerRadius>${shape.cornerRadius}</cornerRadius>\n`;
       if (shape.text) xml += `      <text>${escapeXML(shape.text)}</text>\n`;
+      if (shape.mainText) xml += `      <mainText>${escapeXML(shape.mainText)}</mainText>\n`;
       if (shape.idText) xml += `      <idText>${escapeXML(shape.idText)}</idText>\n`;
       if (shape.value) xml += `      <value>${escapeXML(shape.value)}</value>\n`;
       if (shape.fontFamily) xml += `      <fontFamily>${shape.fontFamily}</fontFamily>\n`;
@@ -166,6 +187,7 @@ export const exportToXML = (diagramData: DiagramData) => {
       xml += `      <id>${connection.id}</id>\n`;
       xml += `      <from>${connection.from}</from>\n`;
       xml += `      <to>${connection.to}</to>\n`;
+      if (connection.style) xml += `      <style>${connection.style}</style>\n`;
       if (connection.points && connection.points.length > 0) {
         xml += '      <points>\n';
         for (let i = 0; i < connection.points.length; i += 2) {
@@ -186,12 +208,13 @@ export const exportToXML = (diagramData: DiagramData) => {
     console.log('XML export complete');
   } catch (error) {
     console.error('Error exporting to XML:', error);
-    throw new Error(`Failed to export as XML: ${error}`);
+    throw new Error(`Gagal export XML: ${getErrorMessage(error)}`);
   }
 };
 
-// Helper function to escape special characters in XML
+// Helper function untuk escape special characters in XML
 function escapeXML(text: string): string {
+  if (!text) return '';
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -221,6 +244,6 @@ export const exportDiagram = async (format: string, stageRef: any, diagramData: 
       break;
     default:
       console.error('Unsupported export format:', format);
-      throw new Error('Unsupported export format. Please choose PDF, PNG, JSON, or XML.');
+      throw new Error('Format export tidak didukung. Pilih PDF, PNG, JSON, atau XML.');
   }
 };
