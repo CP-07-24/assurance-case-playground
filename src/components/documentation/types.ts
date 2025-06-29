@@ -1,14 +1,9 @@
-export interface DocumentationModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  initialSection?: string;
-}
-
 import { LucideIcon } from 'lucide-react';
 
 export interface DocumentationModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialSection?: string;
 }
 
 export interface NavigationItem {
