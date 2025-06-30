@@ -6,13 +6,6 @@ import { useDiagramContext } from "../../store/DiagramContext";
 import MenuDropdown from "../ui/MenuDropdown";
 import GuidanceDialog from "../dialogs/GuidanceDialog";
 import DocumentationModal from "../documentation/DocumentationModal";
-import { FcGoogle } from "react-icons/fc";
-import {
-  signInWithGoogle,
-  firebaseSignOut,
-  auth,
-} from "../../lib/firebase/auth";
-import { User } from "firebase/auth";
 import Logo from "../../assets/logoeditor.png";
 
 const TopBar: React.FC = () => {
@@ -32,23 +25,10 @@ const TopBar: React.FC = () => {
     selectedIds,
   } = useDiagramContext();
 
-  // State management - mempertahankan semua state yang ada
+  // State management
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
   const [isGuidanceDialogOpen, setIsGuidanceDialogOpen] = useState(false);
   const [isDocumentationModalOpen, setIsDocumentationModalOpen] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null); // Enhanced: Add auth error state
-
-  // Authentication monitoring - mempertahankan logic yang ada dengan error handling
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setUser(user);
-      setLoading(false);
-      setAuthError(null); // Clear any auth errors on successful state change
-    });
-    return () => unsubscribe();
-  }, []);
 
   // Mempertahankan function openNewProject yang sudah ada
   const openNewProject = () => {
@@ -57,7 +37,7 @@ const TopBar: React.FC = () => {
     // Mendapatkan URL dasar (tanpa parameter query jika ada)
     const baseUrl = currentUrl.split("?")[0].split("#")[0];
     // Membuka tab baru dengan URL yang sama
-    window.open(baseUrl, "_blank", "noopener,noreferrer"); // Enhanced: Add security attributes
+    window.open(baseUrl, "_blank", "noopener,noreferrer");
   };
 
   // Mempertahankan keyboard shortcuts yang sudah ada
@@ -99,6 +79,10 @@ const TopBar: React.FC = () => {
             e.preventDefault();
             duplicateSelectedShapes();
             break;
+          case "n":
+            e.preventDefault();
+            openNewProject();
+            break;
         }
       } else {
         if (
@@ -125,17 +109,10 @@ const TopBar: React.FC = () => {
     selectAllShapes,
     deleteSelectedShapes,
     duplicateSelectedShapes,
+    openNewProject,
   ]);
 
-  // Mempertahankan menu items yang sudah ada
-  const projectMenuItems = [
-    {
-      label: "New Project",
-      onClick: openNewProject,
-      shortcut: "Ctrl+N", // Enhanced: Add shortcut display
-    },
-  ];
-
+  // Menu items untuk EDIT dropdown
   const editMenuItems = [
     {
       label: "Undo",
@@ -213,28 +190,6 @@ const TopBar: React.FC = () => {
     setIsDocumentationModalOpen(true);
   };
 
-  // Enhanced: Improved sign out with error handling
-  const handleSignOut = async () => {
-    try {
-      setAuthError(null);
-      await firebaseSignOut(auth);
-    } catch (error) {
-      console.error("Error signing out:", error);
-      setAuthError("Gagal logout. Silakan coba lagi.");
-    }
-  };
-
-  // Enhanced: Improved sign in with error handling
-  const handleSignIn = async () => {
-    try {
-      setAuthError(null);
-      await signInWithGoogle();
-    } catch (error) {
-      console.error("Error signing in:", error);
-      setAuthError("Gagal login. Silakan coba lagi.");
-    }
-  };
-
   // Enhanced: Click outside handler untuk close menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -254,7 +209,7 @@ const TopBar: React.FC = () => {
       <div
         className="flex items-center justify-between bg-white border-b border-gray-200 h-12 px-3"
         data-preserve-selection="true"
-        role="banner" // Enhanced: Add ARIA role
+        role="banner"
       >
         <div className="flex items-center">
           {/* Logo and Sidebar Toggle - mempertahankan yang sudah ada */}
@@ -285,24 +240,15 @@ const TopBar: React.FC = () => {
           {/* Menu Navigation - mempertahankan struktur yang sudah ada */}
           <nav className="flex ml-6 space-x-1" role="navigation">
             {/* PROJECT Menu */}
-            <div className="relative">
-              <button
-                className={`px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded-md ${
-                  activeMenu === "project" ? "bg-gray-100" : "hover:bg-gray-50"
-                }`}
-                onClick={() => handleMenuClick("project")}
-                aria-expanded={activeMenu === "project"}
-                aria-haspopup="true"
-              >
-                <div className="flex items-center">
-                  <FolderKanban size={16} className="mr-1.5" />
-                  PROJECT
-                </div>
-              </button>
-              {activeMenu === "project" && (
-                <MenuDropdown items={projectMenuItems} onClose={closeMenu} />
-              )}
-            </div>
+            <button
+              className="px-3 py-1.5 text-sm font-medium hover:bg-gray-50 rounded-md"
+              onClick={openNewProject}
+            >
+              <div className="flex items-center">
+                <FolderKanban size={16} className="mr-1.5" />
+                NEW PROJECT
+              </div>
+            </button>
 
             {/* EDIT Menu */}
             <div className="relative">
@@ -352,58 +298,6 @@ const TopBar: React.FC = () => {
               </button>
             </div>
           </nav>
-        </div>
-
-        {/* User Authentication Section - enhanced dengan error handling */}
-        <div className="flex items-center">
-          {authError && (
-            <div className="mr-3 text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
-              {authError}
-            </div>
-          )}
-          
-          {loading ? (
-            <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
-          ) : user ? (
-            <div className="flex items-center gap-2 group relative">
-              <div className="flex items-center gap-2">
-                {user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt={`${user.displayName || 'User'} profile`}
-                    className="w-8 h-8 rounded-full object-cover"
-                    onError={(e) => {
-                      // Enhanced: Fallback for broken profile images
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full text-sm font-medium">
-                    {user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
-                  </div>
-                )}
-                <span className="text-sm font-medium hidden md:inline truncate max-w-24">
-                  {user.displayName || user.email?.split('@')[0] || "User"}
-                </span>
-              </div>
-              <button
-                onClick={handleSignOut}
-                className="ml-2 text-xs text-gray-500 hover:text-gray-700 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-1"
-                aria-label="Sign out"
-              >
-                Logout
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={handleSignIn}
-              className="flex items-center gap-1 bg-white border border-gray-300 rounded-full px-3 py-1 text-sm hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-              aria-label="Sign in with Google"
-            >
-              <FcGoogle className="text-lg" />
-              <span>Login</span>
-            </button>
-          )}
         </div>
       </div>
 
