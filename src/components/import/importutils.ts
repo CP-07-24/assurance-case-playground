@@ -258,11 +258,7 @@ export const processImportFile = async (file: File): Promise<DiagramData> => {
   if (file.size === 0) {
     throw new Error('File is empty');
   }
-  
-  if (file.size > 10 * 1024 * 1024) { // 10MB limit
-    throw new Error('File too large. Maximum size is 10MB');
-  }
-  
+
   const extension = file.name.toLowerCase().split('.').pop();
   
   if (!extension || !['json', 'xml'].includes(extension)) {
