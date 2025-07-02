@@ -30,17 +30,14 @@ const TopBar: React.FC = () => {
   const [isGuidanceDialogOpen, setIsGuidanceDialogOpen] = useState(false);
   const [isDocumentationModalOpen, setIsDocumentationModalOpen] = useState(false);
 
-  // Mempertahankan function openNewProject yang sudah ada
+  // MODIFIKASI: Function openNewProject - GANTI HANYA BAGIAN INI
   const openNewProject = () => {
-    // Mendapatkan URL saat ini
-    const currentUrl = window.location.href;
-    // Mendapatkan URL dasar (tanpa parameter query jika ada)
-    const baseUrl = currentUrl.split("?")[0].split("#")[0];
-    // Membuka tab baru dengan URL yang sama
+    // Perbaikan untuk Vercel routing - gunakan origin URL
+    const baseUrl = window.location.origin;
     window.open(baseUrl, "_blank", "noopener,noreferrer");
   };
 
-  // Mempertahankan keyboard shortcuts yang sudah ada
+  // SISANYA TETAP SAMA - keyboard shortcuts yang sudah ada
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Close any open menus on Escape
@@ -169,7 +166,7 @@ const TopBar: React.FC = () => {
     },
   ];
 
-  // Mempertahankan menu handlers yang sudah ada
+  // Menu handlers yang sudah ada
   const handleMenuClick = (menuId: string) => {
     setActiveMenu(activeMenu === menuId ? null : menuId);
   };
@@ -178,19 +175,19 @@ const TopBar: React.FC = () => {
     setActiveMenu(null);
   };
 
-  // Mempertahankan guidance dialog handler
+  // Guidance dialog handler
   const handleGuidanceClick = () => {
     closeMenu();
     setIsGuidanceDialogOpen(true);
   };
 
-  // Mempertahankan documentation dialog handler
+  // Documentation dialog handler
   const handleDocumentationClick = () => {
     closeMenu();
     setIsDocumentationModalOpen(true);
   };
 
-  // Enhanced: Click outside handler untuk close menu
+  // Click outside handler untuk close menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (activeMenu && !(event.target as Element)?.closest('.relative')) {
@@ -212,7 +209,7 @@ const TopBar: React.FC = () => {
         role="banner"
       >
         <div className="flex items-center">
-          {/* Logo and Sidebar Toggle - mempertahankan yang sudah ada */}
+          {/* Logo and Sidebar Toggle */}
           <div
             className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
             onClick={toggleSidebar}
@@ -231,13 +228,12 @@ const TopBar: React.FC = () => {
               alt="Editor Logo" 
               className="h-8 w-auto"
               onError={(e) => {
-                // Enhanced: Handle logo load error
                 e.currentTarget.style.display = 'none';
               }}
             />
           </div>
 
-          {/* Menu Navigation - mempertahankan struktur yang sudah ada */}
+          {/* Menu Navigation */}
           <nav className="flex ml-6 space-x-1" role="navigation">
             {/* PROJECT Menu */}
             <button
@@ -254,7 +250,8 @@ const TopBar: React.FC = () => {
             <div className="relative">
               <button
                 className={`px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded-md ${
-                  activeMenu === "edit" ? "bg-gray-100" : "hover:bg-gray-50"
+                  activeMenu === "edit" ?
+                "bg-gray-100" : "hover:bg-gray-50"
                 }`}
                 onClick={() => handleMenuClick("edit")}
                 aria-expanded={activeMenu === "edit"}
@@ -270,7 +267,7 @@ const TopBar: React.FC = () => {
               )}
             </div>
 
-            {/* DOCUMENTATION Button - mempertahankan yang sudah ada */}
+            {/* DOCUMENTATION Button */}
             <div className="relative">
               <button
                 className="px-3 py-1.5 text-sm font-medium hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded-md"
@@ -284,7 +281,7 @@ const TopBar: React.FC = () => {
               </button>
             </div>
 
-            {/* GUIDANCE Button - mempertahankan yang sudah ada */}
+            {/* GUIDANCE Button */}
             <div className="relative">
               <button
                 className="px-3 py-1.5 text-sm font-medium hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded-md"
@@ -301,7 +298,7 @@ const TopBar: React.FC = () => {
         </div>
       </div>
 
-      {/* Dialogs - mempertahankan yang sudah ada */}
+      {/* Dialogs */}
       <GuidanceDialog
         isOpen={isGuidanceDialogOpen}
         onClose={() => setIsGuidanceDialogOpen(false)}

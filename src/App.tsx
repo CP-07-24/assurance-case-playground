@@ -6,6 +6,8 @@ import TemplateSelection from "./components/templates/TemplateSelection";
 import { DiagramProvider, useDiagramContext } from "./store/DiagramContext";
 import { RouterProvider, useRouter } from "./router/RouterContext";
 import RouteIndicator from "./components/common/RouteIndicator";
+// TAMBAH: Import untuk handle direct URL access
+import { normalizeUrl } from "./router/utils";
 
 // Komponen wrapper untuk TemplateSelection yang menggunakan context
 const TemplateSelectionWrapper = ({
@@ -35,7 +37,33 @@ function AppContent() {
   // Ref untuk mencegah infinite loops
   const isUpdatingRef = useRef(false);
 
-  // Sync router currentView ke local view state (one way)
+  // TAMBAH: Handle direct URL access untuk fix Vercel routing
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    const normalizedPath = normalizeUrl(currentPath);
+    
+    let expectedView: "landing" | "template-selection" | "editor" = "landing";
+    switch (normalizedPath) {
+      case '/templates':
+        expectedView = "template-selection";
+        break;
+      case '/canvas':
+        expectedView = "editor";
+        break;
+      default:
+        expectedView = "landing";
+    }
+    
+    if (currentView !== expectedView && !isUpdatingRef.current) {
+      isUpdatingRef.current = true;
+      navigate(expectedView);
+      setTimeout(() => {
+        isUpdatingRef.current = false;
+      }, 0);
+    }
+  }, []); // Run sekali saat mount
+
+  // Sync router currentView ke local view state (one way) - EXISTING CODE
   useEffect(() => {
     if (isUpdatingRef.current) return;
     
