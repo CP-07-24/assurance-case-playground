@@ -31,11 +31,11 @@ const getErrorMessage = (error: unknown): string => {
   return String(error);
 };
 
-// Export to PDF dengan proper error handling
+// Export to PDF with proper error handling
 export const exportToPDF = async (stageRef: any) => {
   if (!stageRef || !stageRef.current) {
     console.error('Stage reference is not available:', stageRef);
-    throw new Error('Canvas tidak tersedia. Silakan coba lagi.');
+    throw new Error('Canvas not available. Please try again.');
   }
   
   try {
@@ -69,15 +69,15 @@ export const exportToPDF = async (stageRef: any) => {
     console.log('PDF export complete');
   } catch (error) {
     console.error('Error exporting to PDF:', error);
-    throw new Error(`Gagal export PDF: ${getErrorMessage(error)}`);
+    throw new Error(`Failed to export PDF: ${getErrorMessage(error)}`);
   }
 };
 
-// Export to PNG dengan proper error handling
+// Export to PNG with proper error handling
 export const exportToPNG = (stageRef: any) => {
   if (!stageRef || !stageRef.current) {
     console.error('Stage reference is not available:', stageRef);
-    throw new Error('Canvas tidak tersedia. Silakan coba lagi.');
+    throw new Error('Canvas not available. Please try again.');
   }
   
   try {
@@ -96,11 +96,11 @@ export const exportToPNG = (stageRef: any) => {
     console.log('PNG export complete');
   } catch (error) {
     console.error('Error exporting to PNG:', error);
-    throw new Error(`Gagal export PNG: ${getErrorMessage(error)}`);
+    throw new Error(`Failed to export PNG: ${getErrorMessage(error)}`);
   }
 };
 
-// Export to JSON dengan metadata
+// Export to JSON with metadata
 export const exportToJSON = (diagramData: DiagramData) => {
   try {
     console.log('Beginning JSON export');
@@ -129,11 +129,11 @@ export const exportToJSON = (diagramData: DiagramData) => {
     console.log('JSON export complete');
   } catch (error) {
     console.error('Error exporting to JSON:', error);
-    throw new Error(`Gagal export JSON: ${getErrorMessage(error)}`);
+    throw new Error(`Failed to export JSON: ${getErrorMessage(error)}`);
   }
 };
 
-// Export to XML dengan proper structure
+// Export to XML with proper structure
 export const exportToXML = (diagramData: DiagramData) => {
   try {
     console.log('Beginning XML export');
@@ -208,11 +208,11 @@ export const exportToXML = (diagramData: DiagramData) => {
     console.log('XML export complete');
   } catch (error) {
     console.error('Error exporting to XML:', error);
-    throw new Error(`Gagal export XML: ${getErrorMessage(error)}`);
+    throw new Error(`Failed to export XML: ${getErrorMessage(error)}`);
   }
 };
 
-// Helper function untuk escape special characters in XML
+// Helper function to escape special characters in XML
 function escapeXML(text: string): string {
   if (!text) return '';
   return text
@@ -244,6 +244,6 @@ export const exportDiagram = async (format: string, stageRef: any, diagramData: 
       break;
     default:
       console.error('Unsupported export format:', format);
-      throw new Error('Format export tidak didukung. Pilih PDF, PNG, JSON, atau XML.');
+      throw new Error('Export format not supported. Choose PDF, PNG, JSON, or XML.');
   }
 };
