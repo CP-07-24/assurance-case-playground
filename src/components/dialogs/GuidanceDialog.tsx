@@ -17,71 +17,36 @@ interface VideoGuide {
 const GuidanceDialog: React.FC<GuidanceDialogProps> = ({ isOpen, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Sample video guides - you can replace with your actual data
+  // Updated video guides with new URLs and descriptions for first 4 items
   const videoGuides: VideoGuide[] = [
     {
       id: '1',
-      title: 'Gunakan AI Prompt di Aplikasi Permodelan',
-      description: 'Pelajari cara menggunakan AI Prompt untuk meningkatkan produktivitas Anda',
-      videoUrl: 'https://www.youtube.com/embed/2_WmgcF24jc',
-      thumbnailUrl: 'https://img.youtube.com/vi/2_WmgcF24jc/mqdefault.jpg'
+      title: 'Create Diagram',
+      description: 'Easily create diagrams using customizable and drag-and-drop visual elements',
+      videoUrl: 'https://www.youtube.com/embed/aCtI7bmdY_w',
+      thumbnailUrl: 'https://img.youtube.com/vi/aCtI7bmdY_w/mqdefault.jpg'
     },
     {
       id: '2',
-      title: 'Gunakan AI Prompt di Aplikasi Permodelan',
-      description: 'Panduan lengkap penggunaan AI dalam aplikasi',
-      videoUrl: 'https://www.youtube.com/embed/2_WmgcF24jc',
-      thumbnailUrl: 'https://img.youtube.com/vi/2_WmgcF24jc/mqdefault.jpg'
+      title: 'Export Import',
+      description: 'Export and import diagrams to support seamless collaboration across devices and teams.',
+      videoUrl: 'https://www.youtube.com/embed/0osZYXMOjJ8',
+      thumbnailUrl: 'https://img.youtube.com/vi/0osZYXMOjJ8/mqdefault.jpg'
     },
     {
       id: '3',
-      title: 'Gunakan AI Prompt di Aplikasi Permodelan',
-      description: 'Tips dan trik untuk mengoptimalkan AI Prompt',
-      videoUrl: 'https://www.youtube.com/embed/2_WmgcF24jc',
-      thumbnailUrl: 'https://img.youtube.com/vi/2_WmgcF24jc/mqdefault.jpg'
+      title: 'Notation Guide',
+      description: 'A complete guide to GSN and SACMN notations to help you understand structured arguments.',
+      videoUrl: 'https://www.youtube.com/embed/W1If6nzfqSA',
+      thumbnailUrl: 'https://img.youtube.com/vi/W1If6nzfqSA/mqdefault.jpg'
     },
     {
       id: '4',
-      title: 'Gunakan AI Prompt di Aplikasi Permodelan',
-      description: 'Contoh praktis penggunaan AI dalam workflow',
-      videoUrl: 'https://www.youtube.com/embed/2_WmgcF24jc',
-      thumbnailUrl: 'https://img.youtube.com/vi/2_WmgcF24jc/mqdefault.jpg'
+      title: 'Shortcut',
+      description: 'Use keyboard shortcuts to speed up your diagram editing workflow efficiently.',
+      videoUrl: 'https://www.youtube.com/embed/hKANJY4S2DU',
+      thumbnailUrl: 'https://img.youtube.com/vi/hKANJY4S2DU/mqdefault.jpg'
     },
-    {
-      id: '5',
-      title: 'Gunakan AI Prompt di Aplikasi Permodelan',
-      description: 'Advanced techniques untuk power users',
-      videoUrl: 'https://www.youtube.com/embed/2_WmgcF24jc',
-      thumbnailUrl: 'https://img.youtube.com/vi/2_WmgcF24jc/mqdefault.jpg'
-    },
-    {
-      id: '6',
-      title: 'Gunakan AI Prompt di Aplikasi Permodelan',
-      description: 'Troubleshooting dan pemecahan masalah',
-      videoUrl: 'https://www.youtube.com/embed/2_WmgcF24jc',
-      thumbnailUrl: 'https://img.youtube.com/vi/2_WmgcF24jc/mqdefault.jpg'
-    },
-    {
-      id: '7',
-      title: 'Gunakan AI Prompt di Aplikasi Permodelan',
-      description: 'Best practices dan rekomendasi',
-      videoUrl: 'https://www.youtube.com/embed/2_WmgcF24jc',
-      thumbnailUrl: 'https://img.youtube.com/vi/2_WmgcF24jc/mqdefault.jpg'
-    },
-    {
-      id: '8',
-      title: 'Gunakan AI Prompt di Aplikasi Permodelan',
-      description: 'Integrasi dengan tools eksternal',
-      videoUrl: 'https://www.youtube.com/embed/2_WmgcF24jc',
-      thumbnailUrl: 'https://img.youtube.com/vi/2_WmgcF24jc/mqdefault.jpg'
-    },
-    {
-      id: '9',
-      title: 'Gunakan AI Prompt di Aplikasi Permodelan',
-      description: 'Update terbaru dan fitur baru',
-      videoUrl: 'https://www.youtube.com/embed/2_WmgcF24jc',
-      thumbnailUrl: 'https://img.youtube.com/vi/2_WmgcF24jc/mqdefault.jpg'
-    }
   ];
 
   // Filter videos based on search query
