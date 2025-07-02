@@ -20,93 +20,178 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  // Simple JSON parser
+  // Generate unique ID for imported items
+  const generateId = () => `imported-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  // Simple JSON parser with better error handling
   const parseJSON = (content: string) => {
     try {
       const data = JSON.parse(content);
       
-      if (!data.shapes || !Array.isArray(data.shapes)) {
-        throw new Error('Format JSON tidak valid: properti "shapes" diperlukan');
+      // Validate basic structure
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid JSON format: Must be an object');
       }
       
-      return {
-        shapes: data.shapes.map((shape: any) => ({
-          ...shape,
-          id: shape.id || `shape-${Date.now()}-${Math.random()}`,
+      if (!data.shapes || !Array.isArray(data.shapes)) {
+        throw new Error('Invalid JSON format: "shapes" property is required and must be an array');
+      }
+      
+      // Process shapes with better validation
+      const shapes = data.shapes.map((shape: any, index: number) => {
+        if (!shape || typeof shape !== 'object') {
+          throw new Error(`Shape ${index + 1} is invalid`);
+        }
+        
+        return {
+          id: shape.id || generateId(),
+          type: shape.type || 'rectangle',
+          title: shape.title || 'Untitled',
+          x: typeof shape.x === 'number' ? shape.x : 0,
+          y: typeof shape.y === 'number' ? shape.y : 0,
+          width: typeof shape.width === 'number' ? shape.width : 100,
+          height: typeof shape.height === 'number' ? shape.height : 50,
+          cornerRadius: typeof shape.cornerRadius === 'number' ? shape.cornerRadius : 0,
+          text: shape.text || '',
+          mainText: shape.mainText || shape.text || '',
+          idText: shape.idText || '',
+          value: shape.value || '',
+          fontFamily: shape.fontFamily || 'Arial',
+          fontSize: typeof shape.fontSize === 'number' ? shape.fontSize : 14,
+          fontWeight: shape.fontWeight || 'normal',
+          fontStyle: shape.fontStyle || 'normal',
+          align: shape.align || 'center',
+          textDecoration: shape.textDecoration || 'none',
+          interLine: shape.interLine || 'normal',
+          description: shape.description || '',
           preview: null
-        })),
-        connections: data.connections || []
-      };
+        };
+      });
+      
+      // Process connections with validation
+      const connections = (data.connections || []).map((connection: any, index: number) => {
+        if (!connection || typeof connection !== 'object') {
+          throw new Error(`Connection ${index + 1} is invalid`);
+        }
+        
+        return {
+          id: connection.id || generateId(),
+          from: connection.from || '',
+          to: connection.to || '',
+          style: connection.style || 'arrow',
+          points: Array.isArray(connection.points) ? connection.points : []
+        };
+      });
+      
+      return { shapes, connections };
     } catch (error) {
-      throw new Error(`Gagal parsing file JSON: ${error}`);
+      if (error instanceof SyntaxError) {
+        throw new Error('Invalid JSON file: Syntax error in JSON');
+      }
+      throw new Error(`Failed to parse JSON file: ${error}`);
     }
   };
 
-  // Simple XML parser
+  // Simple XML parser with better error handling
   const parseXML = (content: string) => {
     try {
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(content, 'text/xml');
       
+      // Check for parsing errors
       const parserError = xmlDoc.querySelector('parsererror');
       if (parserError) {
-        throw new Error('File XML tidak valid');
+        throw new Error('Invalid XML file: XML syntax error');
       }
       
       const shapes: any[] = [];
       const connections: any[] = [];
       
+      // Helper function to get element value safely
+      const getElementValue = (parent: Element, tagName: string): string => {
+        const element = parent.querySelector(tagName);
+        return element ? (element.textContent || '').trim() : '';
+      };
+      
       // Parse shapes
       const shapeElements = xmlDoc.querySelectorAll('diagram > shapes > shape');
-      shapeElements.forEach((element) => {
-        const getId = (tag: string) => element.querySelector(tag)?.textContent || '';
-        
-        shapes.push({
-          id: getId('id') || `shape-${Date.now()}-${Math.random()}`,
-          type: getId('type') || 'unknown',
-          title: getId('title') || 'Untitled',
-          x: parseFloat(getId('x') || '0'),
-          y: parseFloat(getId('y') || '0'),
-          width: parseFloat(getId('width') || '100'),
-          height: parseFloat(getId('height') || '50'),
-          text: getId('text') || '',
-          mainText: getId('mainText') || getId('text') || '',
-          preview: null
-        });
+      shapeElements.forEach((element, index) => {
+        try {
+          shapes.push({
+            id: getElementValue(element, 'id') || generateId(),
+            type: getElementValue(element, 'type') || 'rectangle',
+            title: getElementValue(element, 'title') || 'Untitled',
+            x: parseFloat(getElementValue(element, 'x') || '0'),
+            y: parseFloat(getElementValue(element, 'y') || '0'),
+            width: parseFloat(getElementValue(element, 'width') || '100'),
+            height: parseFloat(getElementValue(element, 'height') || '50'),
+            cornerRadius: parseFloat(getElementValue(element, 'cornerRadius') || '0'),
+            text: getElementValue(element, 'text') || '',
+            mainText: getElementValue(element, 'mainText') || getElementValue(element, 'text') || '',
+            idText: getElementValue(element, 'idText') || '',
+            value: getElementValue(element, 'value') || '',
+            fontFamily: getElementValue(element, 'fontFamily') || 'Arial',
+            fontSize: parseFloat(getElementValue(element, 'fontSize') || '14'),
+            fontWeight: getElementValue(element, 'fontWeight') || 'normal',
+            fontStyle: getElementValue(element, 'fontStyle') || 'normal',
+            align: getElementValue(element, 'align') || 'center',
+            textDecoration: getElementValue(element, 'textDecoration') || 'none',
+            interLine: getElementValue(element, 'interLine') || 'normal',
+            description: getElementValue(element, 'description') || '',
+            preview: null
+          });
+        } catch (err) {
+          console.warn(`Warning: Skipping shape ${index + 1} due to parsing error:`, err);
+        }
       });
       
       // Parse connections  
       const connectionElements = xmlDoc.querySelectorAll('diagram > connections > connection');
-      connectionElements.forEach((element) => {
-        const getId = (tag: string) => element.querySelector(tag)?.textContent || '';
-        
-        connections.push({
-          id: getId('id') || `connection-${Date.now()}-${Math.random()}`,
-          from: getId('from'),
-          to: getId('to'),
-          style: 'arrow',
-          points: []
-        });
+      connectionElements.forEach((element, index) => {
+        try {
+          // Parse points if they exist
+          const points: number[] = [];
+          const pointElements = element.querySelectorAll('points > point');
+          pointElements.forEach(pointEl => {
+            const x = parseFloat(pointEl.getAttribute('x') || '0');
+            const y = parseFloat(pointEl.getAttribute('y') || '0');
+            points.push(x, y);
+          });
+          
+          connections.push({
+            id: getElementValue(element, 'id') || generateId(),
+            from: getElementValue(element, 'from'),
+            to: getElementValue(element, 'to'),
+            style: getElementValue(element, 'style') || 'arrow',
+            points: points
+          });
+        } catch (err) {
+          console.warn(`Warning: Skipping connection ${index + 1} due to parsing error:`, err);
+        }
       });
       
       return { shapes, connections };
     } catch (error) {
-      throw new Error(`Gagal parsing file XML: ${error}`);
+      throw new Error(`Failed to parse XML file: ${error}`);
     }
   };
 
-  // Process file
+  // Process file with improved error handling
   const processFile = async (file: File, type: string) => {
     try {
       setImporting(true);
       setError(null);
-      setImportProgress("Membaca file...");
+      setImportProgress("Reading file...");
       
       await new Promise(resolve => setTimeout(resolve, 300));
       
       const content = await file.text();
       
-      setImportProgress("Memproses data...");
+      if (!content.trim()) {
+        throw new Error('File is empty');
+      }
+      
+      setImportProgress("Processing data...");
       await new Promise(resolve => setTimeout(resolve, 300));
       
       let data;
@@ -118,21 +203,30 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
         data = parseXML(content);
       }
       
+      if (!data.shapes || data.shapes.length === 0) {
+        throw new Error('No valid shapes found in file');
+      }
+      
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      setImportProgress("Mengimpor ke diagram...");
+      setImportProgress("Importing to diagram...");
       
-      // Add shapes
+      let successCount = 0;
+      let skipCount = 0;
+      
+      // Add shapes with offset to avoid overlap
       data.shapes.forEach((shape: any) => {
         try {
           addShape({
             ...shape,
-            id: `imported-${Date.now()}-${Math.random()}`,
-            x: shape.x + 20,
+            id: generateId(), // Always generate new ID
+            x: shape.x + 20, // Small offset
             y: shape.y + 20
           });
+          successCount++;
         } catch (err) {
           console.warn('Failed to add shape:', err);
+          skipCount++;
         }
       });
 
@@ -141,21 +235,21 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
         try {
           addConnection({
             ...connection,
-            id: `imported-conn-${Date.now()}-${Math.random()}`
+            id: generateId() // Always generate new ID
           });
         } catch (err) {
           console.warn('Failed to add connection:', err);
         }
       });
       
-      setImportProgress("Import selesai!");
+      setImportProgress(`Import complete! Added ${successCount} shapes${skipCount > 0 ? ` (${skipCount} skipped)` : ''}`);
       
-      // Close modal
+      // Close modal after a delay
       setTimeout(() => {
         onClose();
         setSelectedFile(null);
         setImportProgress("");
-      }, 1000);
+      }, 2000);
       
     } catch (err) {
       console.error("Import error:", err);
@@ -205,10 +299,16 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  // Handle single file
+  // Handle single file with validation
   const handleFile = (file: File) => {
     setError(null);
     setSelectedFile(file);
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError("File too large. Maximum size is 10MB");
+      return;
+    }
 
     const fileName = file.name.toLowerCase();
     if (fileName.endsWith(".json")) {
@@ -216,7 +316,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
     } else if (fileName.endsWith(".xml")) {
       processFile(file, "xml");
     } else {
-      setError("Format file tidak didukung. Pilih file .json atau .xml");
+      setError("Unsupported file format. Please choose .json or .xml files");
     }
   };
 
@@ -244,7 +344,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
 
         <div className="p-4">
           <p className="text-sm text-gray-600 mb-4">
-            Pilih file untuk import diagram:
+            Choose a file to import diagram data:
           </p>
 
           {/* Drag and Drop Area */}
@@ -270,16 +370,16 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
             ) : selectedFile && !error ? (
               <div className="flex flex-col items-center">
                 <CheckCircle className="text-green-500 mb-2" size={32} />
-                <p className="text-sm text-green-600">File dipilih: {selectedFile.name}</p>
+                <p className="text-sm text-green-600">File selected: {selectedFile.name}</p>
               </div>
             ) : (
               <>
                 <Upload className="mx-auto text-gray-400 mb-2" size={32} />
                 <p className="text-sm text-gray-600 mb-1">
-                  Drag and drop file di sini, atau klik untuk pilih
+                  Drag and drop file here, or click to select
                 </p>
                 <p className="text-xs text-gray-500">
-                  Support: .json, .xml
+                  Supports: .json, .xml
                 </p>
               </>
             )}
@@ -301,7 +401,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
           )}
 
           <p className="text-sm text-gray-600 mb-4 mt-4">
-            Atau pilih format file secara langsung:
+            Or choose a file format directly:
           </p>
 
           <div className="grid grid-cols-2 gap-3">
@@ -326,12 +426,13 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
 
           {/* Instructions */}
           <div className="mt-4 p-3 bg-gray-50 rounded-md">
-            <h4 className="text-sm font-medium text-gray-800 mb-2">Cara Import:</h4>
+            <h4 className="text-sm font-medium text-gray-800 mb-2">How to Import:</h4>
             <ul className="text-xs text-gray-600 space-y-1">
-              <li>• Drag file dari explorer ke area drop zone</li>
-              <li>• Atau klik tombol format untuk pilih file</li>
-              <li>• File akan diproses otomatis setelah dipilih</li>
-              <li>• Import akan menambahkan ke diagram yang ada</li>
+              <li>• Drag file from explorer to the drop zone</li>
+              <li>• Or click format button to select file</li>
+              <li>• File will be processed automatically</li>
+              <li>• Import will add to existing diagram</li>
+              <li>• Imported items will have slight offset</li>
             </ul>
           </div>
         </div>

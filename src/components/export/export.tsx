@@ -163,37 +163,37 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, stageRef }) 
     }
   };
 
-  // Export to PDF dengan enhanced validation dan bounding box
+  // Export to PDF with enhanced validation and bounding box
   const exportToPDF = async () => {
     const stage = getKonvaStage();
     
     if (!stage) {
-      throw new Error('Canvas tidak ditemukan. Pastikan ada shapes di diagram.');
+      throw new Error('Canvas not found. Make sure there are shapes in the diagram.');
     }
 
     if (!validateCanvasContent(stage)) {
-      throw new Error('Canvas kosong atau tidak valid. Pastikan ada shapes yang terlihat di diagram.');
+      throw new Error('Canvas is empty or invalid. Make sure there are visible shapes in the diagram.');
     }
     
     try {
-      setExportProgress('Memulai export PDF...');
+      setExportProgress('Starting PDF export...');
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      setExportProgress('Mengimpor library PDF...');
+      setExportProgress('Importing PDF library...');
       const { default: jsPDF } = await import('jspdf');
       
-      setExportProgress('Menghitung area diagram...');
+      setExportProgress('Calculating diagram area...');
       
       // Get bounding box of shapes
       const boundingBox = getShapesBoundingBox();
       
       if (!boundingBox) {
-        throw new Error('Tidak dapat menghitung area diagram');
+        throw new Error('Unable to calculate diagram area');
       }
 
       console.log('PDF Bounding box:', boundingBox);
       
-      setExportProgress('Mengambil data canvas...');
+      setExportProgress('Capturing canvas data...');
       
       // Export only the area containing shapes
       const dataUrl = stage.toDataURL({ 
@@ -210,7 +210,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, stageRef }) 
       
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      setExportProgress('Membuat dokumen PDF...');
+      setExportProgress('Creating PDF document...');
       
       // Determine orientation based on aspect ratio
       const aspectRatio = boundingBox.width / boundingBox.height;
@@ -221,7 +221,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, stageRef }) 
         unit: 'px',
       });
       
-      setExportProgress('Memproses gambar...');
+      setExportProgress('Processing image...');
       const imgProps = pdf.getImageProperties(dataUrl);
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
@@ -240,17 +240,17 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, stageRef }) 
       const x = (pageWidth - imgWidth) / 2;
       const y = (pageHeight - imgHeight) / 2;
       
-      setExportProgress('Menambahkan gambar ke PDF...');
+      setExportProgress('Adding image to PDF...');
       pdf.addImage(dataUrl, 'PNG', x, y, imgWidth, imgHeight);
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      setExportProgress('Menyimpan file...');
+      setExportProgress('Saving file...');
       pdf.save('diagram.pdf');
       
-      setExportProgress('Export selesai!');
+      setExportProgress('Export complete!');
     } catch (error) {
       console.error('Error exporting to PDF:', error);
-      throw new Error(`Gagal export PDF: ${error}`);
+      throw new Error(`Failed to export PDF: ${error}`);
     }
   };
 
@@ -287,34 +287,34 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, stageRef }) 
     };
   };
 
-  // Export to PNG dengan enhanced validation dan bounding box
+  // Export to PNG with enhanced validation and bounding box
   const exportToPNG = async () => {
     const stage = getKonvaStage();
     
     if (!stage) {
-      throw new Error('Canvas tidak ditemukan. Pastikan ada shapes di diagram.');
+      throw new Error('Canvas not found. Make sure there are shapes in the diagram.');
     }
 
     if (!validateCanvasContent(stage)) {
-      throw new Error('Canvas kosong atau tidak valid. Pastikan ada shapes yang terlihat di diagram.');
+      throw new Error('Canvas is empty or invalid. Make sure there are visible shapes in the diagram.');
     }
     
     try {
-      setExportProgress('Memulai export PNG...');
+      setExportProgress('Starting PNG export...');
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      setExportProgress('Menghitung area diagram...');
+      setExportProgress('Calculating diagram area...');
       
       // Get bounding box of shapes
       const boundingBox = getShapesBoundingBox();
       
       if (!boundingBox) {
-        throw new Error('Tidak dapat menghitung area diagram');
+        throw new Error('Unable to calculate diagram area');
       }
 
       console.log('Bounding box:', boundingBox);
       
-      setExportProgress('Mengambil data canvas...');
+      setExportProgress('Capturing canvas data...');
       
       // Export only the area containing shapes
       const dataUrl = stage.toDataURL({ 
@@ -337,7 +337,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, stageRef }) 
       
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      setExportProgress('Menyimpan file...');
+      setExportProgress('Saving file...');
       
       // Convert dataURL to blob for better file handling
       const response = await fetch(dataUrl);
@@ -351,20 +351,20 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, stageRef }) 
       
       downloadFile(blob, 'diagram.png');
       
-      setExportProgress('Export selesai!');
+      setExportProgress('Export complete!');
     } catch (error) {
       console.error('Error exporting to PNG:', error);
-      throw new Error(`Gagal export PNG: ${error}`);
+      throw new Error(`Failed to export PNG: ${error}`);
     }
   };
 
-  // Export to JSON (unchanged)
+  // Export to JSON
   const exportToJSON = async () => {
     try {
-      setExportProgress('Memulai export JSON...');
+      setExportProgress('Starting JSON export...');
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      setExportProgress('Memproses data diagram...');
+      setExportProgress('Processing diagram data...');
       const simplifiedShapes = diagramData.shapes.map(shape => {
         const { preview, ...rest } = shape;
         return rest;
@@ -379,27 +379,27 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, stageRef }) 
         }
       };
       
-      setExportProgress('Membuat file JSON...');
+      setExportProgress('Creating JSON file...');
       const jsonString = JSON.stringify(exportData, null, 2);
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      setExportProgress('Menyimpan file...');
+      setExportProgress('Saving file...');
       downloadFile(jsonString, 'diagram.json');
       
-      setExportProgress('Export selesai!');
+      setExportProgress('Export complete!');
     } catch (error) {
       console.error('Error exporting to JSON:', error);
-      throw new Error(`Gagal export JSON: ${error}`);
+      throw new Error(`Failed to export JSON: ${error}`);
     }
   };
 
-  // Export to XML (unchanged)
+  // Export to XML
   const exportToXML = async () => {
     try {
-      setExportProgress('Memulai export XML...');
+      setExportProgress('Starting XML export...');
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      setExportProgress('Membuat struktur XML...');
+      setExportProgress('Creating XML structure...');
       let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
       xml += '<diagram>\n';
       xml += '  <metadata>\n';
@@ -422,7 +422,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, stageRef }) 
       });
       xml += '  </shapes>\n';
       
-      setExportProgress('Menambahkan koneksi...');
+      setExportProgress('Adding connections...');
       await new Promise(resolve => setTimeout(resolve, 300));
       
       xml += '  <connections>\n';
@@ -436,13 +436,13 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, stageRef }) 
       xml += '  </connections>\n';
       xml += '</diagram>';
       
-      setExportProgress('Menyimpan file...');
+      setExportProgress('Saving file...');
       downloadFile(xml, 'diagram.xml');
       
-      setExportProgress('Export selesai!');
+      setExportProgress('Export complete!');
     } catch (error) {
       console.error('Error exporting to XML:', error);
-      throw new Error(`Gagal export XML: ${error}`);
+      throw new Error(`Failed to export XML: ${error}`);
     }
   };
 
@@ -476,7 +476,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, stageRef }) 
           await exportToXML();
           break;
         default:
-          throw new Error('Format export tidak didukung');
+          throw new Error('Export format not supported');
       }
 
       setTimeout(() => {
@@ -495,20 +495,20 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, stageRef }) 
     }
   };
 
-  // Status check untuk visual feedback
+  // Status check for visual feedback
   const getCanvasStatus = () => {
     const stage = getKonvaStage();
-    if (!stage) return { available: false, message: 'Canvas tidak ditemukan' };
+    if (!stage) return { available: false, message: 'Canvas not found' };
     
     if (diagramData.shapes.length === 0) {
-      return { available: false, message: 'Belum ada shapes di diagram' };
+      return { available: false, message: 'No shapes in diagram yet' };
     }
     
     if (!validateCanvasContent(stage)) {
-      return { available: false, message: 'Canvas kosong atau tidak valid' };
+      return { available: false, message: 'Canvas is empty or invalid' };
     }
     
-    return { available: true, message: 'Siap untuk export' };
+    return { available: true, message: 'Ready to export' };
   };
 
   const canvasStatus = getCanvasStatus();
@@ -529,7 +529,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, stageRef }) 
 
         <div className="p-4">
           <p className="text-sm text-gray-600 mb-4">
-            Pilih format untuk export diagram. Export akan fokus ke area yang berisi shapes.
+            Choose format to export diagram. Export will focus on the area containing shapes.
           </p>
 
           {/* Canvas Status */}
