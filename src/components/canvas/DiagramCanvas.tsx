@@ -57,6 +57,7 @@ const DiagramCanvas: React.FC = () => {
     toggleShapeSelection,
     deleteShape,
     deleteConnection,
+    deleteSelectedShapes, // Tambahkan ini
     selectedConnection,
     // Tambahkan import untuk fitur menggambar koneksi
     isDrawingConnection,
@@ -67,9 +68,12 @@ const DiagramCanvas: React.FC = () => {
 
   // Buat fungsi pembuat menu di luar useEffect
   const createShapeContextMenu = (shapeId: string) => {
+    // Cari shape berdasarkan id
+    const shape = shapes.find((s) => s.id === shapeId);
+    const isText = shape && shape.type === "text";
     return [
       {
-        label: "Hapus Shape",
+        label: isText ? "Delete Text" : "Delete Shape",
         icon: <Trash2 size={16} />,
         onClick: () => deleteShape(shapeId),
       },
@@ -79,7 +83,7 @@ const DiagramCanvas: React.FC = () => {
   const createConnectionContextMenu = (connectionId: string) => {
     return [
       {
-        label: "Hapus Koneksi",
+        label: "Delete Koneksi",
         icon: <Trash2 size={16} />,
         onClick: () => deleteConnection(connectionId),
       },
@@ -125,12 +129,11 @@ const DiagramCanvas: React.FC = () => {
     const menuItems = [];
 
     // Jika ada shape yang dipilih
-    if (selectedIds.length > 0) {
+    if (selectedIds.length === 1) {
+      menuItems.push(...createShapeContextMenu(selectedIds[0]));
+    } else if (selectedIds.length > 1) {
       menuItems.push({
-        label:
-          selectedIds.length > 1
-            ? `Hapus (${selectedIds.length} shapes)`
-            : "Hapus Shape",
+        label: `Hapus (${selectedIds.length} shapes)`,
         icon: <Trash2 size={16} />,
         onClick: handleDeleteSelectedShapes,
       });
@@ -139,7 +142,7 @@ const DiagramCanvas: React.FC = () => {
     // Jika ada connection yang dipilih
     if (selectedConnection) {
       menuItems.push({
-        label: "Hapus Koneksi",
+        label: "Delete Connection",
         icon: <Trash2 size={16} />,
         onClick: handleDeleteConnection,
       });
@@ -323,9 +326,21 @@ const DiagramCanvas: React.FC = () => {
     };
   }, [deleteConnection]);
 
-  // Tambahkan effect untuk keyboard listener (Escape untuk clear selection)
+  // PERBAIKAN: Tambahkan effect untuk keyboard listener dengan Delete key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Jangan proses jika user sedang mengetik di input field
+      const target = e.target as HTMLElement;
+      const isInputField =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.contentEditable === "true" ||
+        target.closest('[contenteditable="true"]');
+
+      if (isInputField) {
+        return;
+      }
+
       if (e.key === "Escape") {
         console.log("Escape key pressed, clearing selection");
         clearSelection();
@@ -342,6 +357,26 @@ const DiagramCanvas: React.FC = () => {
           cancelDrawingConnection();
         }
       }
+
+      // PERBAIKAN: Tambahkan handler untuk Delete key
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault(); // Prevent browser back navigation on Backspace
+
+        // Delete selected connection first if any
+        if (selectedConnection) {
+          deleteConnection(selectedConnection.id);
+          return;
+        }
+
+        // Delete selected shapes
+        if (selectedIds.length > 0) {
+          console.log(
+            "Delete key pressed, deleting selected shapes:",
+            selectedIds
+          );
+          deleteSelectedShapes();
+        }
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -355,6 +390,10 @@ const DiagramCanvas: React.FC = () => {
     isConnecting,
     isDrawingConnection,
     cancelDrawingConnection,
+    selectedIds, // PERBAIKAN: Tambahkan selectedIds ke dependency
+    selectedConnection,
+    deleteSelectedShapes, // PERBAIKAN: Tambahkan deleteSelectedShapes ke dependency
+    deleteConnection,
   ]);
 
   // Tambahkan effect untuk click di luar canvas
@@ -518,8 +557,8 @@ const DiagramCanvas: React.FC = () => {
                 onSelect={() => setSelectedId(shape.id)}
                 onShiftSelect={() => toggleShapeSelection(shape.id)}
                 onChange={(newAttrs, batchHistory) => {
-  updateShapePosition(shape.id, newAttrs, batchHistory);
-}}
+                  updateShapePosition(shape.id, newAttrs, batchHistory);
+                }}
               />
             ))}
           </Layer>
