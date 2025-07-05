@@ -51,8 +51,6 @@ const TextTab: React.FC = () => {
                 { value: "14", label: "14" },
                 { value: "16", label: "16" },
                 { value: "18", label: "18" },
-                { value: "20", label: "20" },
-                { value: "24", label: "24" },
               ]}
               onChange={(value) =>
                 updateSelectedShape({ fontSize: parseInt(value) })

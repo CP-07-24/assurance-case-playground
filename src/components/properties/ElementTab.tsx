@@ -121,7 +121,6 @@ const ElementTab: React.FC = () => {
                 { value: "14", label: "14px" },
                 { value: "16", label: "16px" },
                 { value: "18", label: "18px" },
-                { value: "20", label: "20px" },
               ]}
               onChange={(value) => {
                 console.log("Updating fontSizeId to:", parseInt(value, 10));
@@ -178,7 +177,6 @@ const ElementTab: React.FC = () => {
                 { value: "14", label: "14px" },
                 { value: "16", label: "16px" },
                 { value: "18", label: "18px" },
-                { value: "20", label: "20px" },
               ]}
               onChange={(value) => {
                 console.log("Updating fontSize to:", parseInt(value, 10));

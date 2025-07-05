@@ -189,7 +189,6 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
 
     // Selama drag, JANGAN update state/context!
     // Biarkan Konva yang handle posisi node.
-
   };
 
   // Tangani akhir drag
