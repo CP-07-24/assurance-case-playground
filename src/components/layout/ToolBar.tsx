@@ -6,7 +6,6 @@ import {
   Undo2,
   Redo2,
   Type,
-  PanelRight,
   MoveUpLeft,
   ArrowRight,
   ArrowLeftRight,
@@ -255,10 +254,6 @@ const ToolBar: React.FC = () => {
             {Math.round(zoomLevel * 100)}%
           </span>
         </div>
-
-        <button className="p-1.5 ml-3 rounded-md text-gray-700 hover:bg-gray-100">
-          <PanelRight size={20} />
-        </button>
       </div>
 
       {/* All Modals */}

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Stage, Layer, Line, Arrow } from "react-konva"; // Tambahkan import Line dan Arrow
+import { Stage, Layer, Line, Arrow } from "react-konva";
 import { useDiagramContext } from "../../store/DiagramContext";
 import GridBackground from "./GridBackground";
 import DiagramShape from "./DiagramShape";
@@ -10,10 +10,8 @@ import ContextMenu from "./ContextMenu";
 import { Connection as ConnectionType } from "../../types/shapes";
 
 const DiagramCanvas: React.FC = () => {
-  
   const stageRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  // Gunakan ref untuk menyimpan dimensi, hindari useState karena menyebabkan re-render
   const dimensionsRef = useRef({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -24,9 +22,7 @@ const DiagramCanvas: React.FC = () => {
     x: number;
     y: number;
   } | null>(null);
-  const [tempConnectionPoints, setTempConnectionPoints] = useState<
-    number[] | null
-  >(null);
+  const [tempConnectionPoints, setTempConnectionPoints] = useState<number[] | null>(null);
 
   // State untuk context menu
   const [contextMenu, setContextMenu] = useState({
@@ -58,8 +54,8 @@ const DiagramCanvas: React.FC = () => {
     toggleShapeSelection,
     deleteShape,
     deleteConnection,
+    deleteSelectedShapes,
     selectedConnection,
-    // Tambahkan import untuk fitur menggambar koneksi
     isDrawingConnection,
     connectionDrawingStyle,
     cancelDrawingConnection,
@@ -74,11 +70,12 @@ const DiagramCanvas: React.FC = () => {
     }
   }, [stageRef, setStageRef]);
 
-  // Buat fungsi pembuat menu di luar useEffect
   const createShapeContextMenu = (shapeId: string) => {
+    const shape = shapes.find((s) => s.id === shapeId);
+    const isText = shape && shape.type === "text";
     return [
       {
-        label: "Hapus Shape",
+        label: isText ? "Delete Text" : "Delete Shape",
         icon: <Trash2 size={16} />,
         onClick: () => deleteShape(shapeId),
       },
@@ -88,14 +85,13 @@ const DiagramCanvas: React.FC = () => {
   const createConnectionContextMenu = (connectionId: string) => {
     return [
       {
-        label: "Hapus Koneksi",
+        label: "Delete Connection",
         icon: <Trash2 size={16} />,
         onClick: () => deleteConnection(connectionId),
       },
     ];
   };
 
-  // Function untuk menutup context menu
   const closeContextMenu = () => {
     setContextMenu({
       ...contextMenu,
@@ -103,58 +99,46 @@ const DiagramCanvas: React.FC = () => {
     });
   };
 
-  // Function untuk menghapus shape yang dipilih
   const handleDeleteSelectedShapes = () => {
-    selectedIds.forEach((id) => {
-      deleteShape(id);
-    });
+    deleteSelectedShapes();
   };
 
-  // Function untuk menghapus connection yang dipilih
   const handleDeleteConnection = () => {
     if (selectedConnection) {
       deleteConnection(selectedConnection.id);
     }
   };
 
-  // Function untuk menghandle context menu
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
 
-    // Jangan tampilkan context menu pada canvas kosong
     if (!selectedIds.length && !selectedConnection) {
       return;
     }
 
-    // Tentukan posisi untuk menu
     const x = e.clientX;
     const y = e.clientY;
 
-    // Buat menu items berdasarkan konteks
     const menuItems = [];
 
-    // Jika ada shape yang dipilih
-    if (selectedIds.length > 0) {
+    if (selectedIds.length === 1) {
+      menuItems.push(...createShapeContextMenu(selectedIds[0]));
+    } else if (selectedIds.length > 1) {
       menuItems.push({
-        label:
-          selectedIds.length > 1
-            ? `Hapus (${selectedIds.length} shapes)`
-            : "Hapus Shape",
+        label: `Delete (${selectedIds.length} shapes)`,
         icon: <Trash2 size={16} />,
         onClick: handleDeleteSelectedShapes,
       });
     }
 
-    // Jika ada connection yang dipilih
     if (selectedConnection) {
       menuItems.push({
-        label: "Hapus Koneksi",
+        label: "Delete Connection",
         icon: <Trash2 size={16} />,
         onClick: handleDeleteConnection,
       });
     }
 
-    // Hanya tampilkan menu jika ada item
     if (menuItems.length > 0) {
       setContextMenu({
         visible: true,
@@ -165,11 +149,9 @@ const DiagramCanvas: React.FC = () => {
     }
   };
 
-  // Handler untuk mouse events saat menggambar koneksi
+  // Connection drawing handlers
   const handleMouseDown = (e: KonvaEventObject<MouseEvent>) => {
     if (!isDrawingConnection) return;
-
-    // Cek apakah klik dilakukan pada stage, bukan pada shape
     const clickedOnEmpty = e.target === e.target.getStage();
     if (!clickedOnEmpty) return;
 
@@ -179,13 +161,11 @@ const DiagramCanvas: React.FC = () => {
     const pointerPos = stage.getPointerPosition();
     if (!pointerPos) return;
 
-    // Konversi ke koordinat yang mempertimbangkan zoom
     const x = pointerPos.x / zoomLevel;
     const y = pointerPos.y / zoomLevel;
 
-    // Simpan titik awal
     setTempConnectionStart({ x, y });
-    setTempConnectionPoints([x, y, x, y]); // Titik awal dan akhir sama untuk memulai
+    setTempConnectionPoints([x, y, x, y]);
   };
 
   const handleMouseMove = (e: KonvaEventObject<MouseEvent>) => {
@@ -197,11 +177,9 @@ const DiagramCanvas: React.FC = () => {
     const pointerPos = stage.getPointerPosition();
     if (!pointerPos) return;
 
-    // Konversi ke koordinat yang mempertimbangkan zoom
     const x = pointerPos.x / zoomLevel;
     const y = pointerPos.y / zoomLevel;
 
-    // Perbarui titik akhir, pertahankan titik awal
     setTempConnectionPoints([
       tempConnectionStart.x,
       tempConnectionStart.y,
@@ -220,69 +198,58 @@ const DiagramCanvas: React.FC = () => {
     const pointerPos = stage.getPointerPosition();
     if (!pointerPos) return;
 
-    // Konversi ke koordinat yang mempertimbangkan zoom
     const x = pointerPos.x / zoomLevel;
     const y = pointerPos.y / zoomLevel;
 
-    // Pastikan ini bukan hanya klik (tidak ada gerakan)
     const isClick =
       Math.abs(tempConnectionStart.x - x) < 5 &&
       Math.abs(tempConnectionStart.y - y) < 5;
 
     if (!isClick) {
-      // Buat koneksi baru
       const newConnection = {
         id: `conn-${Date.now()}`,
-        from: "", // Kosong karena bukan antar shape
-        to: "", // Kosong karena bukan antar shape
+        from: "",
+        to: "",
         points: [tempConnectionStart.x, tempConnectionStart.y, x, y],
-        style: connectionDrawingStyle || "line",
+        style: connectionDrawingStyle || "solidArrow",
       };
 
       addConnection(newConnection);
     }
 
-    // Reset state
     setTempConnectionStart(null);
     setTempConnectionPoints(null);
     cancelDrawingConnection();
   };
 
-  // Effect khusus untuk resize listener
+  // Resize handler
   useEffect(() => {
     const updateSize = () => {
       if (!containerRef.current) return;
       const { width, height } = containerRef.current.getBoundingClientRect();
-      // Hindari pembaruan state yang tidak perlu
       if (
         Math.abs(width - dimensionsRef.current.width) > 2 ||
         Math.abs(height - dimensionsRef.current.height) > 2
       ) {
-        // Update ref dulu
         dimensionsRef.current = { width, height };
-        // Lalu update context hanya jika ukuran berubah signifikan
         setStageSize({ width, height });
       }
     };
-    // Jalankan sekali setelah mount
-    // Gunakan setTimeout untuk memastikan DOM telah di-render sepenuhnya
+
     const initialTimer = setTimeout(updateSize, 0);
-    // Setup resize listener
     window.addEventListener("resize", updateSize);
-    // Cleanup
     return () => {
       clearTimeout(initialTimer);
       window.removeEventListener("resize", updateSize);
     };
-  }, []); // Empty dependency array - hanya jalankan sekali
+  }, []);
 
-  // Handler untuk shape context menu
+  // Context menu handlers
   useEffect(() => {
     if (!containerRef.current) return;
 
     const handleShapeContextMenu = (e: any) => {
       const { x, y, shapeId } = e.detail;
-
       setContextMenu({
         visible: true,
         x,
@@ -291,26 +258,17 @@ const DiagramCanvas: React.FC = () => {
       });
     };
 
-    containerRef.current.addEventListener(
-      "shapeContextMenu",
-      handleShapeContextMenu
-    );
-
+    containerRef.current.addEventListener("shapeContextMenu", handleShapeContextMenu);
     return () => {
-      containerRef.current?.removeEventListener(
-        "shapeContextMenu",
-        handleShapeContextMenu
-      );
+      containerRef.current?.removeEventListener("shapeContextMenu", handleShapeContextMenu);
     };
-  }, [deleteShape]);
+  }, [deleteShape, shapes]);
 
-  // Handler untuk connection context menu
   useEffect(() => {
     if (!containerRef.current) return;
 
     const handleConnectionContextMenu = (e: any) => {
       const { x, y, connectionId } = e.detail;
-
       setContextMenu({
         visible: true,
         x,
@@ -319,42 +277,56 @@ const DiagramCanvas: React.FC = () => {
       });
     };
 
-    containerRef.current.addEventListener(
-      "connectionContextMenu",
-      handleConnectionContextMenu
-    );
-
+    containerRef.current.addEventListener("connectionContextMenu", handleConnectionContextMenu);
     return () => {
-      containerRef.current?.removeEventListener(
-        "connectionContextMenu",
-        handleConnectionContextMenu
-      );
+      containerRef.current?.removeEventListener("connectionContextMenu", handleConnectionContextMenu);
     };
   }, [deleteConnection]);
 
-  // Tambahkan effect untuk keyboard listener (Escape untuk clear selection)
+  // Keyboard handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInputField =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.contentEditable === "true" ||
+        target.closest('[contenteditable="true"]');
+
+      if (isInputField) {
+        return;
+      }
+
       if (e.key === "Escape") {
-        console.log("Escape key pressed, clearing selection");
         clearSelection();
-        closeContextMenu(); // Tutup context menu jika ada
+        closeContextMenu();
 
         if (isConnecting) {
           cancelConnection();
         }
 
-        // Tambahkan untuk membatalkan drawing connection
         if (isDrawingConnection) {
           setTempConnectionStart(null);
           setTempConnectionPoints(null);
           cancelDrawingConnection();
         }
       }
+
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+
+        if (selectedConnection) {
+          deleteConnection(selectedConnection.id);
+          return;
+        }
+
+        if (selectedIds.length > 0) {
+          deleteSelectedShapes();
+        }
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
-
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
@@ -364,31 +336,29 @@ const DiagramCanvas: React.FC = () => {
     isConnecting,
     isDrawingConnection,
     cancelDrawingConnection,
+    selectedIds,
+    selectedConnection,
+    deleteSelectedShapes,
+    deleteConnection,
   ]);
 
-  // Tambahkan effect untuk click di luar canvas
+  // Click outside handler
   useEffect(() => {
     const handleDocumentClick = (e: MouseEvent) => {
-      // Periksa apakah target memiliki data-preserve-selection atau berada di dalamnya
       const targetElement = e.target as HTMLElement;
       const preserveSelectionElement = targetElement.closest(
         '[data-preserve-selection="true"]'
       );
 
       if (preserveSelectionElement) {
-        return; // Keluar dari handler tanpa membersihkan seleksi
+        return;
       }
 
-      // Periksa apakah klik terjadi di luar canvas
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(targetElement)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(targetElement)) {
         clearSelection();
       }
     };
 
-    // Gunakan capture phase untuk menangkap event sebelum event lainnya
     document.addEventListener("mousedown", handleDocumentClick, true);
     return () => {
       document.removeEventListener("mousedown", handleDocumentClick, true);
@@ -418,39 +388,33 @@ const DiagramCanvas: React.FC = () => {
   };
 
   const handleStageClick = (e: KonvaEventObject<MouseEvent>) => {
-    // Periksa apakah klik terjadi pada stage itu sendiri, bukan pada shape
     if (e.target === e.currentTarget) {
       clearSelection();
-      closeContextMenu(); // Tutup context menu saat klik di stage
+      closeContextMenu();
       if (isConnecting) {
         cancelConnection();
       }
     }
   };
 
-  // Tambahkan handler untuk click pada container
   const handleContainerClick = (e: React.MouseEvent) => {
-    // Pastikan klik terjadi langsung pada container, bukan pada anak-anaknya
     if (e.target === e.currentTarget) {
-      console.log("Clicked on container, clearing selection");
       clearSelection();
-      closeContextMenu(); // Tutup context menu saat klik di container
+      closeContextMenu();
     }
   };
 
-  // Gunakan nilai stageSize dari context
-  const stageWidth = stageSize.width || window.innerWidth;
-  const stageHeight = stageSize.height || window.innerHeight;
-
-  // Tentukan style cursor berdasarkan mode
   const cursorStyle = isDrawingConnection ? "crosshair" : "default";
 
-  // Perbaikan: Fungsi untuk mengatur dashing berdasarkan style
   const getDashArray = (style: ConnectionType["style"] | null) => {
     if (style === "dashed") return [5, 5];
     if (style === "dotted") return [2, 2];
     return undefined;
   };
+
+  // Use stageSize from context with fallback to large dimensions
+  const stageWidth = stageSize.width || 3000;
+  const stageHeight = stageSize.height || 2000;
 
   return (
     <div
@@ -460,75 +424,72 @@ const DiagramCanvas: React.FC = () => {
       onDrop={handleDrop}
       onClick={handleContainerClick}
       onContextMenu={handleContextMenu}
-      style={{ cursor: cursorStyle }} // Tambahkan style cursor
+      style={{ cursor: cursorStyle }}
     >
-      <Stage
-        ref={stageRef}
-        width={stageWidth}
-        height={stageHeight}
-        scaleX={zoomLevel}
-        scaleY={zoomLevel}
-        onClick={handleStageClick}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          overflow: "auto",
+          position: "relative",
+        }}
       >
-        <Layer>
-          <GridBackground width={5000} height={5000} spacing={20} />
-        </Layer>
-        <Layer>
-          {connections.map((connection) => (
-            <Connection key={connection.id} connection={connection} />
-          ))}
+        <Stage
+          ref={stageRef}
+          width={stageWidth}
+          height={stageHeight}
+          scaleX={zoomLevel}
+          scaleY={zoomLevel}
+          onClick={handleStageClick}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+        >
+          <Layer>
+            <GridBackground width={stageWidth} height={stageHeight} spacing={20} />
+          </Layer>
+          <Layer>
+            {connections.map((connection) => (
+              <Connection key={connection.id} connection={connection} />
+            ))}
 
-          {/* Render temporary connection line saat menggambar */}
-          {isDrawingConnection &&
-            tempConnectionPoints &&
-            (() => {
-              // Perbaikan: Gunakan IIFE untuk menghindari comparison type error
-              if (
-                connectionDrawingStyle === "arrow" ||
-                connectionDrawingStyle === "doubleArrow"
-              ) {
-                return (
-                  <Arrow
-                    points={tempConnectionPoints}
-                    stroke="#3B82F6"
-                    strokeWidth={2}
-                    dash={getDashArray(connectionDrawingStyle)}
-                    pointerLength={10}
-                    pointerWidth={10}
-                    pointerAtBeginning={
-                      connectionDrawingStyle === "doubleArrow"
-                    }
-                  />
-                );
-              } else {
-                return (
-                  <Line
-                    points={tempConnectionPoints}
-                    stroke="#3B82F6"
-                    strokeWidth={2}
-                    dash={getDashArray(connectionDrawingStyle)}
-                  />
-                );
-              }
-            })()}
+            {isDrawingConnection && tempConnectionPoints && (
+              connectionDrawingStyle === "arrow" || connectionDrawingStyle === "doubleArrow" ? (
+                <Arrow
+                  points={tempConnectionPoints}
+                  stroke="#3B82F6"
+                  strokeWidth={2}
+                  dash={getDashArray(connectionDrawingStyle)}
+                  pointerLength={10}
+                  pointerWidth={10}
+                  pointerAtBeginning={connectionDrawingStyle === "doubleArrow"}
+                />
+              ) : (
+                <Line
+                  points={tempConnectionPoints}
+                  stroke="#3B82F6"
+                  strokeWidth={2}
+                  dash={getDashArray(connectionDrawingStyle)}
+                />
+              )
+            )}
 
-          {shapes.map((shape) => (
-            <DiagramShape
-              key={shape.id}
-              shape={shape}
-              isSelected={selectedIds.includes(shape.id)}
-              onSelect={() => setSelectedId(shape.id)}
-              onShiftSelect={() => toggleShapeSelection(shape.id)}
-              onChange={(newAttrs) => updateShapePosition(shape.id, newAttrs)}
-            />
-          ))}
-        </Layer>
-      </Stage>
+            {shapes.map((shape) => (
+              <DiagramShape
+                key={shape.id}
+                shape={shape}
+                isSelected={selectedIds.includes(shape.id)}
+                onSelect={() => setSelectedId(shape.id)}
+                onShiftSelect={() => toggleShapeSelection(shape.id)}
+                onChange={(newAttrs, batchHistory) => {
+                  updateShapePosition(shape.id, newAttrs, batchHistory);
+                }}
+              />
+            ))}
+          </Layer>
+        </Stage>
+      </div>
 
-      {/* Render Context Menu */}
       <ContextMenu
         visible={contextMenu.visible}
         x={contextMenu.x}

@@ -19,6 +19,8 @@ export const useDiagram = () => {
     selectedConnection,
     editingShapeId,
     setEditingShape,
+    cutSelectedShapes,
+    selectAllShapes,
   } = useDiagramContext();
 
   // Tambahkan state untuk melacak apakah text sedang kosong
@@ -108,12 +110,7 @@ export const useDiagram = () => {
           document.activeElement instanceof HTMLInputElement ||
           document.activeElement instanceof HTMLTextAreaElement ||
           (document.activeElement &&
-            document.activeElement.getAttribute("contenteditable") ===
-              "true") ||
-          (document.activeElement?.tagName === "TEXTAREA" &&
-            document.activeElement?.parentElement?.classList.contains(
-              "konvajs-content"
-            ));
+            document.activeElement.getAttribute("contenteditable") === "true");
 
         if (isTextInput) {
           // Jika kita masih di dalam field input, jangan hapus shape
@@ -167,7 +164,7 @@ export const useDiagram = () => {
             break;
           case "x":
             e.preventDefault();
-            // Cut implementation
+            cutSelectedShapes();
             break;
           case "d":
             e.preventDefault();
@@ -176,8 +173,6 @@ export const useDiagram = () => {
           case "a":
             e.preventDefault();
             console.log("Select All from useDiagram");
-            // Gunakan selectAllShapes dari context
-            const { selectAllShapes } = useDiagramContext();
             selectAllShapes();
             break;
         }

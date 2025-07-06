@@ -1,16 +1,11 @@
-"use client"; // Wajib karena menggunakan hooks dan interaktivitas
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { Edit, HelpCircle, Lightbulb, FolderKanban } from "lucide-react";
 import { useDiagramContext } from "../../store/DiagramContext";
 import MenuDropdown from "../ui/MenuDropdown";
-import { FcGoogle } from "react-icons/fc";
-import {
-  signInWithGoogle,
-  firebaseSignOut,
-  auth,
-} from "../../lib/firebase/auth";
-import { User } from "firebase/auth";
+import GuidanceDialog from "../dialogs/GuidanceDialog";
+import DocumentationModal from "../documentation/DocumentationModal";
 import Logo from "../../assets/logoeditor.png";
 
 const TopBar: React.FC = () => {
@@ -30,39 +25,27 @@ const TopBar: React.FC = () => {
     selectedIds,
   } = useDiagramContext();
 
+  // State management
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isGuidanceDialogOpen, setIsGuidanceDialogOpen] = useState(false);
+  const [isDocumentationModalOpen, setIsDocumentationModalOpen] = useState(false);
 
-  // Pantau perubahan status autentikasi
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setUser(user);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Fungsi untuk membuka project baru di tab baru
+  // MODIFIKASI: Function openNewProject - GANTI HANYA BAGIAN INI
   const openNewProject = () => {
-    // Mendapatkan URL saat ini
-    const currentUrl = window.location.href;
-    // Mendapatkan URL dasar (tanpa parameter query jika ada)
-    const baseUrl = currentUrl.split("?")[0];
-    // Buka URL dasar di tab baru
-    window.open(baseUrl, "_blank");
+    // Perbaikan untuk Vercel routing - gunakan origin URL
+    const baseUrl = window.location.origin;
+    window.open(baseUrl, "_blank", "noopener,noreferrer");
   };
 
-  // Handle keyboard shortcuts
+  // SISANYA TETAP SAMA - keyboard shortcuts yang sudah ada
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Check if we're in an input field
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      ) {
+      // Close any open menus on Escape
+      if (e.key === "Escape") {
+        setActiveMenu(null);
         return;
       }
+
       if (e.ctrlKey || e.metaKey) {
         switch (e.key.toLowerCase()) {
           case "z":
@@ -87,30 +70,24 @@ const TopBar: React.FC = () => {
             break;
           case "a":
             e.preventDefault();
-            console.log("Ctrl+A detected, calling selectAllShapes");
             selectAllShapes();
             break;
           case "d":
             e.preventDefault();
-            // Duplicate functionality (copy then paste with offset)
-            copyShape();
-            setTimeout(() => pasteShape(30, 30), 10);
+            duplicateSelectedShapes();
             break;
-          case "x":
+          case "n":
             e.preventDefault();
-            // Cut functionality (copy then delete)
-            copyShape();
-            deleteSelectedShapes();
+            openNewProject();
             break;
         }
-      }
-      // Delete key for deleting selected shapes
-      if (e.key === "Delete" || e.key === "Backspace") {
-        // Hanya jika tidak ada input yang difokuskan
+      } else {
         if (
+          e.key === "Delete" &&
           !(
             e.target instanceof HTMLInputElement ||
-            e.target instanceof HTMLTextAreaElement
+            e.target instanceof HTMLTextAreaElement ||
+            (e.target as Element)?.getAttribute('contenteditable') === 'true'
           )
         ) {
           e.preventDefault();
@@ -129,16 +106,10 @@ const TopBar: React.FC = () => {
     selectAllShapes,
     deleteSelectedShapes,
     duplicateSelectedShapes,
+    openNewProject,
   ]);
 
-  const projectMenuItems = [
-    {
-      label: "New Project",
-      onClick: openNewProject,
-      shortcut: "",
-    },
-  ];
-
+  // Menu items untuk EDIT dropdown
   const editMenuItems = [
     {
       label: "Undo",
@@ -195,47 +166,7 @@ const TopBar: React.FC = () => {
     },
   ];
 
-  const helpMenuItems = [
-    {
-      label: "Keyboard Shortcuts",
-      onClick: () => console.log("Keyboard Shortcuts"),
-      shortcut: "",
-    },
-    {
-      label: "User Guide",
-      onClick: () => console.log("User Guide"),
-      shortcut: "",
-    },
-    {
-      label: "Report Bug",
-      onClick: () => console.log("Report Bug"),
-      shortcut: "",
-    },
-    {
-      label: "Contact Support",
-      onClick: () => console.log("Contact Support"),
-      shortcut: "",
-    },
-  ];
-
-  const guidanceMenuItems = [
-    {
-      label: "Getting Started",
-      onClick: () => console.log("Getting Started"),
-      shortcut: "",
-    },
-    {
-      label: "Best Practices",
-      onClick: () => console.log("Best Practices"),
-      shortcut: "",
-    },
-    {
-      label: "Tips & Tricks",
-      onClick: () => console.log("Tips & Tricks"),
-      shortcut: "",
-    },
-  ];
-
+  // Menu handlers yang sudah ada
   const handleMenuClick = (menuId: string) => {
     setActiveMenu(activeMenu === menuId ? null : menuId);
   };
@@ -244,166 +175,140 @@ const TopBar: React.FC = () => {
     setActiveMenu(null);
   };
 
-  const handleSignOut = async () => {
-    try {
-      await firebaseSignOut(auth);
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
+  // Guidance dialog handler
+  const handleGuidanceClick = () => {
+    closeMenu();
+    setIsGuidanceDialogOpen(true);
   };
 
-  return (
-    <div
-      className="flex items-center justify-between bg-white border-b border-gray-200 h-12 px-3"
-      data-preserve-selection="true"
-    >
-      <div className="flex items-center">
-        <div
-          className="flex items-center cursor-pointer"
-          onClick={toggleSidebar}
-        >
-          <img src={Logo} alt="Editor Logo" className="h-8 w-auto" />
-        </div>
+  // Documentation dialog handler
+  const handleDocumentationClick = () => {
+    closeMenu();
+    setIsDocumentationModalOpen(true);
+  };
 
-        <div className="flex ml-6 space-x-1">
-          {/* PROJECT Menu */}
-          <div className="relative">
+  // Click outside handler untuk close menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (activeMenu && !(event.target as Element)?.closest('.relative')) {
+        setActiveMenu(null);
+      }
+    };
+
+    if (activeMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [activeMenu]);
+
+  return (
+    <>
+      <div
+        className="flex items-center justify-between bg-white border-b border-gray-200 h-12 px-3"
+        data-preserve-selection="true"
+        role="banner"
+      >
+        <div className="flex items-center">
+          {/* Logo and Sidebar Toggle */}
+          <div
+            className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={toggleSidebar}
+            role="button"
+            tabIndex={0}
+            aria-label="Toggle sidebar"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleSidebar();
+              }
+            }}
+          >
+            <img 
+              src={Logo} 
+              alt="Editor Logo" 
+              className="h-8 w-auto"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          </div>
+
+          {/* Menu Navigation */}
+          <nav className="flex ml-6 space-x-1" role="navigation">
+            {/* PROJECT Menu */}
             <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "project" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
-              onClick={() => handleMenuClick("project")}
+              className="px-3 py-1.5 text-sm font-medium hover:bg-gray-50 rounded-md"
+              onClick={openNewProject}
             >
               <div className="flex items-center">
                 <FolderKanban size={16} className="mr-1.5" />
-                PROJECT
+                NEW PROJECT
               </div>
             </button>
-            {activeMenu === "project" && (
-              <MenuDropdown items={projectMenuItems} onClose={closeMenu} />
-            )}
-          </div>
 
-          {/* EDIT Menu */}
-          <div className="relative">
-            <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "edit" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
-              onClick={() => handleMenuClick("edit")}
-            >
-              <div className="flex items-center">
-                <Edit size={16} className="mr-1.5" />
-                EDIT
-              </div>
-            </button>
-            {activeMenu === "edit" && (
-              <MenuDropdown items={editMenuItems} onClose={closeMenu} />
-            )}
-          </div>
+            {/* EDIT Menu */}
+            <div className="relative">
+              <button
+                className={`px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded-md ${
+                  activeMenu === "edit" ?
+                "bg-gray-100" : "hover:bg-gray-50"
+                }`}
+                onClick={() => handleMenuClick("edit")}
+                aria-expanded={activeMenu === "edit"}
+                aria-haspopup="true"
+              >
+                <div className="flex items-center">
+                  <Edit size={16} className="mr-1.5" />
+                  EDIT
+                </div>
+              </button>
+              {activeMenu === "edit" && (
+                <MenuDropdown items={editMenuItems} onClose={closeMenu} />
+              )}
+            </div>
 
-          {/* DOCUMENTATION Menu */}
-          <div className="relative">
-            <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "help" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
-              onClick={() => handleMenuClick("help")}
-            >
-              <div className="flex items-center">
-                <HelpCircle size={16} className="mr-1.5" />
-                DOCUMENTATION
-              </div>
-            </button>
-            {activeMenu === "help" && (
-              <MenuDropdown items={helpMenuItems} onClose={closeMenu} />
-            )}
-          </div>
+            {/* DOCUMENTATION Button */}
+            <div className="relative">
+              <button
+                className="px-3 py-1.5 text-sm font-medium hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded-md"
+                onClick={handleDocumentationClick}
+                aria-label="Open notation guide"
+              >
+                <div className="flex items-center">
+                  <HelpCircle size={16} className="mr-1.5" />
+                  NOTATION GUIDE
+                </div>
+              </button>
+            </div>
 
-          {/* GUIDANCE Menu */}
-          <div className="relative">
-            <button
-              className={`px-3 py-1.5 text-sm font-medium ${
-                activeMenu === "guidance" ? "bg-gray-100" : "hover:bg-gray-50"
-              } rounded-md`}
-              onClick={() => handleMenuClick("guidance")}
-            >
-              <div className="flex items-center">
-                <Lightbulb size={16} className="mr-1.5" />
-                GUIDANCE
-              </div>
-            </button>
-            {activeMenu === "guidance" && (
-              <MenuDropdown items={guidanceMenuItems} onClose={closeMenu} />
-            )}
-          </div>
+            {/* GUIDANCE Button */}
+            <div className="relative">
+              <button
+                className="px-3 py-1.5 text-sm font-medium hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded-md"
+                onClick={handleGuidanceClick}
+                aria-label="Open app guide"
+              >
+                <div className="flex items-center">
+                  <Lightbulb size={16} className="mr-1.5" />
+                  APP GUIDE
+                </div>
+              </button>
+            </div>
+          </nav>
         </div>
       </div>
 
-      {/* User Authentication Section */}
-      <div className="flex items-center">
-        {loading ? (
-          <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
-        ) : user ? (
-          <div className="flex items-center gap-2 group relative">
-            <div className="flex items-center gap-2 cursor-pointer">
-              {user.photoURL ? (
-                <img
-                  src={user.photoURL}
-                  alt="User Profile"
-                  width={32}
-                  height={32}
-                  className="rounded-full"
-                  referrerPolicy="no-referrer" // Penting untuk foto profil Google
-                />
-              ) : (
-                <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full">
-                  {user.displayName?.charAt(0).toUpperCase() || "U"}
-                </div>
-              )}
-              <span className="text-sm font-medium hidden md:inline-block">
-                {user.displayName || "User"}
-              </span>
-            </div>
+      {/* Dialogs */}
+      <GuidanceDialog
+        isOpen={isGuidanceDialogOpen}
+        onClose={() => setIsGuidanceDialogOpen(false)}
+      />
 
-            {/* User Dropdown Menu */}
-            <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-              <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
-                {user.email}
-              </div>
-              <button
-                onClick={() => console.log("Profile Settings")}
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              >
-                Profile Settings
-              </button>
-              <button
-                onClick={() => console.log("Account Preferences")}
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              >
-                Preferences
-              </button>
-              <div className="border-t border-gray-100 mt-1 pt-1">
-                <button
-                  onClick={handleSignOut}
-                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                >
-                  Sign Out
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={signInWithGoogle}
-            className="flex items-center gap-2 bg-white border border-gray-300 rounded-full px-3 py-1 text-sm hover:bg-gray-50 transition-colors"
-          >
-            <FcGoogle size={18} />
-            <span>Sign In</span>
-          </button>
-        )}
-      </div>
-    </div>
+      <DocumentationModal
+        isOpen={isDocumentationModalOpen}
+        onClose={() => setIsDocumentationModalOpen(false)}
+      />
+    </>
   );
 };
 
