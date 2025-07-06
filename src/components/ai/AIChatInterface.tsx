@@ -9,6 +9,8 @@ import {
   RefreshCw,
   AlertCircle,
   CheckCircle,
+  Brain,
+  Target,
 } from "lucide-react";
 
 // Interface definitions
@@ -17,8 +19,9 @@ export interface ChatMessage {
   content: string;
   sender: "user" | "assistant";
   timestamp: Date;
-  type: "text" | "action" | "error" | "success";
+  type: "text" | "action" | "error" | "success" | "diagram" | "analysis";
   metadata?: any;
+  confidence?: number;
 }
 
 export interface ChatInterfaceProps {
@@ -42,7 +45,7 @@ export interface QuickAction {
   disabled?: boolean;
 }
 
-// Message component
+// Enhanced Message component
 const MessageBubble: React.FC<{
   message: ChatMessage;
   onCopy?: (content: string) => void;
@@ -58,19 +61,23 @@ const MessageBubble: React.FC<{
   };
 
   const getMessageStyles = () => {
-    const baseStyles = "max-w-[80%] rounded-lg p-3 relative group";
+    const baseStyles = "max-w-[85%] rounded-lg p-3 relative group transition-all duration-200 shadow-sm";
     
     switch (message.type) {
       case "error":
         return `${baseStyles} bg-red-50 text-red-800 border border-red-200`;
       case "success":
         return `${baseStyles} bg-green-50 text-green-800 border border-green-200`;
-      case "action":
+      case "diagram":
         return `${baseStyles} bg-blue-50 text-blue-800 border border-blue-200`;
+      case "analysis":
+        return `${baseStyles} bg-purple-50 text-purple-800 border border-purple-200`;
+      case "action":
+        return `${baseStyles} bg-orange-50 text-orange-800 border border-orange-200`;
       default:
         return message.sender === "user"
           ? `${baseStyles} bg-blue-600 text-white`
-          : `${baseStyles} bg-gray-100 text-gray-800`;
+          : `${baseStyles} bg-gray-100 text-gray-800 border border-gray-200`;
     }
   };
 
@@ -80,12 +87,35 @@ const MessageBubble: React.FC<{
         return <AlertCircle size={14} className="text-red-500" />;
       case "success":
         return <CheckCircle size={14} className="text-green-500" />;
+      case "diagram":
+        return <Target size={14} className="text-blue-500" />;
+      case "analysis":
+        return <Brain size={14} className="text-purple-500" />;
+      case "action":
+        return <RefreshCw size={14} className="text-orange-500" />;
       default:
         return message.sender === "user" ? (
           <User size={14} className="opacity-70" />
         ) : (
           <Bot size={14} className="opacity-70" />
         );
+    }
+  };
+
+  const getTypeLabel = () => {
+    switch (message.type) {
+      case "diagram":
+        return "Generated";
+      case "analysis":
+        return "Analysis";
+      case "error":
+        return "Error";
+      case "success":
+        return "Success";
+      case "action":
+        return "Action";
+      default:
+        return null;
     }
   };
 
@@ -106,9 +136,14 @@ const MessageBubble: React.FC<{
                 minute: "2-digit",
               })}
             </span>
-            {message.type === "action" && (
-              <span className="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full">
-                Action
+            {getTypeLabel() && (
+              <span className="text-xs bg-black/10 text-black/70 px-2 py-0.5 rounded-full">
+                {getTypeLabel()}
+              </span>
+            )}
+            {message.confidence && (
+              <span className="text-xs bg-black/10 text-black/70 px-2 py-0.5 rounded-full">
+                {Math.round(message.confidence * 100)}% confident
               </span>
             )}
           </div>
@@ -130,14 +165,21 @@ const MessageBubble: React.FC<{
         </div>
 
         {/* Content */}
-        <div className="text-sm whitespace-pre-wrap break-words">
+        <div className="text-sm whitespace-pre-wrap break-words leading-relaxed">
           {message.content}
         </div>
 
         {/* Metadata */}
         {message.metadata && (
-          <div className="mt-2 text-xs opacity-60">
-            {JSON.stringify(message.metadata, null, 2)}
+          <div className="mt-2 p-2 bg-black/5 rounded text-xs">
+            <div className="font-medium mb-1">Details:</div>
+            {typeof message.metadata === 'object' ? (
+              <pre className="text-xs opacity-70 overflow-x-auto">
+                {JSON.stringify(message.metadata, null, 2)}
+              </pre>
+            ) : (
+              <div className="opacity-70">{message.metadata}</div>
+            )}
           </div>
         )}
       </div>
@@ -145,19 +187,21 @@ const MessageBubble: React.FC<{
   );
 };
 
-// Loading indicator component
-const LoadingIndicator: React.FC = () => (
+// Enhanced Loading indicator component
+const LoadingIndicator: React.FC<{ processingText?: string }> = ({ 
+  processingText = "Processing your request..." 
+}) => (
   <div className="flex justify-start">
-    <div className="bg-gray-100 text-gray-800 rounded-lg p-3 max-w-[80%]">
+    <div className="bg-gray-100 text-gray-800 rounded-lg p-3 max-w-[85%] border border-gray-200">
       <div className="flex items-center gap-2 mb-1">
-        <Bot size={14} className="opacity-70" />
-        <span className="text-xs opacity-70">Thinking...</span>
+        <Brain size={14} className="opacity-70" />
+        <span className="text-xs opacity-70">{processingText}</span>
       </div>
       <div className="flex space-x-2">
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
+            className="w-2 h-2 rounded-full bg-blue-400 animate-bounce"
             style={{ animationDelay: `${i * 0.2}s` }}
           />
         ))}
@@ -166,7 +210,7 @@ const LoadingIndicator: React.FC = () => (
   </div>
 );
 
-// Quick actions component
+// Enhanced Quick actions component
 const QuickActions: React.FC<{
   actions: QuickAction[];
   onActionClick: (command: string) => void;
@@ -175,13 +219,13 @@ const QuickActions: React.FC<{
   if (!actions.length) return null;
 
   return (
-    <div className="flex gap-2 mb-3 overflow-x-auto">
+    <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
       {actions.map((action) => (
         <button
           key={action.id}
           onClick={() => onActionClick(action.command)}
           disabled={disabled || action.disabled}
-          className="flex items-center gap-1 px-3 py-1.5 text-xs bg-white border rounded-full hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+          className="flex items-center gap-1 px-3 py-1.5 text-xs bg-white border rounded-full hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap shadow-sm"
         >
           {action.icon}
           {action.label}
@@ -191,7 +235,7 @@ const QuickActions: React.FC<{
   );
 };
 
-// Input component
+// Enhanced Input component
 const MessageInput: React.FC<{
   value: string;
   onChange: (value: string) => void;
@@ -202,19 +246,20 @@ const MessageInput: React.FC<{
   isProcessing: boolean;
 }> = ({ value, onChange, onSend, onKeyDown, placeholder, disabled, isProcessing }) => (
   <div className="relative">
-    <input
-      type="text"
+    <textarea
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={onKeyDown}
       placeholder={placeholder}
-      className="w-full pr-10 pl-4 py-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-full pr-12 pl-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:opacity-50 disabled:cursor-not-allowed resize-none min-h-[48px] max-h-[120px]"
       disabled={disabled}
+      rows={1}
+      style={{ scrollbarWidth: 'thin' }}
     />
     <button
       onClick={onSend}
       disabled={!value.trim() || isProcessing || disabled}
-      className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 rounded-full transition-colors ${
+      className={`absolute right-3 bottom-3 p-1.5 rounded-full transition-colors ${
         value.trim() && !isProcessing && !disabled
           ? "text-blue-500 hover:bg-blue-50"
           : "text-gray-400 cursor-not-allowed"
@@ -229,13 +274,13 @@ const MessageInput: React.FC<{
   </div>
 );
 
-// Main chat interface component
+// Main enhanced chat interface component
 const AIChatInterface: React.FC<ChatInterfaceProps> = ({
   messages,
   onSendMessage,
   onClearMessages,
   isProcessing = false,
-  placeholder = "Type your message...",
+  placeholder = "Describe what you'd like to create...",
   disabled = false,
   showQuickActions = true,
   quickActions = [],
@@ -294,8 +339,13 @@ const AIChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   }, []);
 
+  // Auto-resize textarea
+  const handleInputChange = useCallback((value: string) => {
+    setInputValue(value);
+  }, []);
+
   return (
-    <div className={`flex flex-col bg-white ${className}`}>
+    <div className={`flex flex-col bg-white border border-gray-200 rounded-lg shadow-sm ${className}`}>
       {/* Error banner */}
       {error && (
         <div className="mx-4 mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center justify-between">
@@ -305,7 +355,7 @@ const AIChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
           <button
             onClick={() => setError(null)}
-            className="text-red-500 hover:text-red-700"
+            className="text-red-500 hover:text-red-700 transition-colors"
           >
             ×
           </button>
@@ -320,8 +370,9 @@ const AIChatInterface: React.FC<ChatInterfaceProps> = ({
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-gray-500 text-center">
             <div>
-              <Bot size={32} className="mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No messages yet. Start a conversation!</p>
+              <Brain size={32} className="mx-auto mb-2 opacity-50" />
+              <p className="text-sm font-medium">AI Assistant Ready</p>
+              <p className="text-xs opacity-70 mt-1">Describe what diagram you'd like to create</p>
             </div>
           </div>
         ) : (
@@ -334,12 +385,12 @@ const AIChatInterface: React.FC<ChatInterfaceProps> = ({
           ))
         )}
 
-        {isProcessing && <LoadingIndicator />}
+        {isProcessing && <LoadingIndicator processingText="Analyzing your request and generating diagram..." />}
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input area */}
-      <div className="p-4 border-t bg-gray-50">
+      <div className="p-4 border-t bg-gray-50 rounded-b-lg">
         {/* Quick actions */}
         {showQuickActions && quickActions.length > 0 && (
           <QuickActions
@@ -352,7 +403,7 @@ const AIChatInterface: React.FC<ChatInterfaceProps> = ({
         {/* Message input */}
         <MessageInput
           value={inputValue}
-          onChange={setInputValue}
+          onChange={handleInputChange}
           onSend={handleSendMessage}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
@@ -363,7 +414,7 @@ const AIChatInterface: React.FC<ChatInterfaceProps> = ({
         {/* Footer actions */}
         <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
           <span>
-            {messages.length} message{messages.length !== 1 ? 's' : ''}
+            {messages.length} message{messages.length !== 1 ? 's' : ''} • Press Enter to send
           </span>
           <div className="flex items-center gap-2">
             <button
