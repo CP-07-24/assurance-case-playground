@@ -1,515 +1,556 @@
-// src/components/ai/AiDiagramGen.tsx - Final Fixed Version
-import React, { useState, useRef, useEffect } from "react"; // Removed useCallback
+// src/components/ai/AiDiagramGen.tsx
+import React, { useState, useRef, useEffect } from "react";
 import {
-  Sparkles,
   Send,
   Zap,
   Trash,
   Lightbulb,
-  MessagesSquare,
-  Settings,
+  Target,
+  Brain,
 } from "lucide-react";
 import { useDiagramContext } from "../../store/DiagramContext";
-import { ShapeOnCanvas } from "../../types/shapes";
 
-// Define types for messages
+// Enhanced interfaces
 interface Message {
   id: string;
   content: string;
   sender: "user" | "ai";
   timestamp: Date;
-  generatedDiagram?: boolean;
+  type: "text" | "diagram" | "analysis" | "error";
+  confidence?: number;
+  metadata?: any;
 }
 
-// Define a diagram template type
-interface DiagramTemplate {
-  name: string;
-  elements: Partial<ShapeOnCanvas>[];
-  connections: { fromIndex: number; toIndex: number }[];
+interface DiagramIntent {
+  type: 'safety_case' | 'hazard_analysis' | 'software_safety' | 'flowchart' | 'sequence' | 'architecture';
+  domain: string;
+  complexity: 'simple' | 'medium' | 'complex';
+  elements: string[];
+  structure: 'hierarchical' | 'sequential' | 'network';
 }
 
-// Common patterns for diagram generation
-const DIAGRAM_TEMPLATES: Record<string, DiagramTemplate> = {
-  safety_case_basic: {
-    name: "Basic Safety Case",
-    elements: [
-      {
-        type: "goal",
-        idText: "G1",
-        value: "System is acceptably safe",
-        mainText: "System is acceptably safe",
-        x: 400,
-        y: 100,
-        width: 200,
-        height: 80,
-      },
-      {
-        type: "goal",
-        idText: "G2",
-        value: "Hardware is safe",
-        mainText: "Hardware is safe",
-        x: 200,
-        y: 250,
-        width: 180,
-        height: 70,
-      },
-      {
-        type: "goal",
-        idText: "G3",
-        value: "Software is safe",
-        mainText: "Software is safe",
-        x: 450,
-        y: 250,
-        width: 180,
-        height: 70,
-      },
-      {
-        type: "goal",
-        idText: "G4",
-        value: "Operation is safe",
-        mainText: "Operation is safe",
-        x: 700,
-        y: 250,
-        width: 180,
-        height: 70,
-      },
-      {
-        type: "sacm",
-        idText: "Sn1",
-        value: "Hardware test results",
-        mainText: "Hardware test results",
-        x: 200,
-        y: 380,
-        width: 180,
-        height: 70,
-      },
-      {
-        type: "sacm",
-        idText: "Sn2",
-        value: "Software verification report",
-        mainText: "Software verification report",
-        x: 450,
-        y: 380,
-        width: 180,
-        height: 70,
-      },
-      {
-        type: "sacm",
-        idText: "Sn3",
-        value: "Operational procedures",
-        mainText: "Operational procedures",
-        x: 700,
-        y: 380,
-        width: 180,
-        height: 70,
-      },
-    ],
-    connections: [
-      { fromIndex: 0, toIndex: 1 },
-      { fromIndex: 0, toIndex: 2 },
-      { fromIndex: 0, toIndex: 3 },
-      { fromIndex: 1, toIndex: 4 },
-      { fromIndex: 2, toIndex: 5 },
-      { fromIndex: 3, toIndex: 6 },
-    ],
-  },
-  hazard_analysis: {
-    name: "Hazard Analysis",
-    elements: [
-      {
-        type: "goal",
-        idText: "G1",
-        value: "All identified hazards are mitigated",
-        mainText: "All identified hazards are mitigated",
-        x: 400,
-        y: 100,
-        width: 200,
-        height: 80,
-      },
-      {
-        type: "strategy",
-        idText: "S1",
-        value: "Argument by hazard analysis",
-        mainText: "Argument by hazard analysis",
-        x: 400,
-        y: 220,
-        width: 200,
-        height: 70,
-        cornerRadius: 5,
-      },
-      {
-        type: "goal",
-        idText: "G2",
-        value: "Hazard H1 is mitigated",
-        mainText: "Hazard H1 is mitigated",
-        x: 250,
-        y: 340,
-        width: 180,
-        height: 70,
-      },
-      {
-        type: "goal",
-        idText: "G3",
-        value: "Hazard H2 is mitigated",
-        mainText: "Hazard H2 is mitigated",
-        x: 550,
-        y: 340,
-        width: 180,
-        height: 70,
-      },
-    ],
-    connections: [
-      { fromIndex: 0, toIndex: 1 },
-      { fromIndex: 1, toIndex: 2 },
-      { fromIndex: 1, toIndex: 3 },
-    ],
-  },
-  software_safety: {
-    name: "Software Safety",
-    elements: [
-      {
-        type: "goal",
-        idText: "G1",
-        value: "Software is acceptably safe",
-        mainText: "Software is acceptably safe",
-        x: 400,
-        y: 100,
-        width: 200,
-        height: 80,
-      },
-      {
-        type: "strategy",
-        idText: "S1",
-        value: "Argument by verification & validation",
-        mainText: "Argument by verification & validation",
-        x: 400,
-        y: 220,
-        width: 240,
-        height: 70,
-        cornerRadius: 5,
-      },
-      {
-        type: "goal",
-        idText: "G2",
-        value: "Requirements are correct",
-        mainText: "Requirements are correct",
-        x: 250,
-        y: 340,
-        width: 180,
-        height: 70,
-      },
-      {
-        type: "goal",
-        idText: "G3",
-        value: "Implementation is correct",
-        mainText: "Implementation is correct",
-        x: 550,
-        y: 340,
-        width: 180,
-        height: 70,
-      },
-    ],
-    connections: [
-      { fromIndex: 0, toIndex: 1 },
-      { fromIndex: 1, toIndex: 2 },
-      { fromIndex: 1, toIndex: 3 },
-    ],
-  },
-  autonomous_vehicle: {
-    name: "Autonomous Vehicle Safety",
-    elements: [
-      {
-        type: "goal",
-        idText: "G1",
-        value: "Autonomous vehicle is safe for public roads",
-        mainText: "Autonomous vehicle is safe for public roads",
-        x: 400,
-        y: 100,
-        width: 250,
-        height: 80,
-      },
-      {
-        type: "strategy",
-        idText: "S1",
-        value: "Argument by system decomposition",
-        mainText: "Argument by system decomposition",
-        x: 400,
-        y: 220,
-        width: 220,
-        height: 70,
-        cornerRadius: 5,
-      },
-      {
-        type: "goal",
-        idText: "G2",
-        value: "Sensor system is reliable",
-        mainText: "Sensor system is reliable",
-        x: 150,
-        y: 340,
-        width: 180,
-        height: 70,
-      },
-      {
-        type: "goal",
-        idText: "G3",
-        value: "Decision algorithm is correct",
-        mainText: "Decision algorithm is correct",
-        x: 400,
-        y: 340,
-        width: 180,
-        height: 70,
-      },
-      {
-        type: "goal",
-        idText: "G4",
-        value: "Actuator system is safe",
-        mainText: "Actuator system is safe",
-        x: 650,
-        y: 340,
-        width: 180,
-        height: 70,
-      },
-    ],
-    connections: [
-      { fromIndex: 0, toIndex: 1 },
-      { fromIndex: 1, toIndex: 2 },
-      { fromIndex: 1, toIndex: 3 },
-      { fromIndex: 1, toIndex: 4 },
-    ],
-  },
-  medical_device: {
-    name: "Medical Device Safety",
-    elements: [
-      {
-        type: "goal",
-        idText: "G1",
-        value: "Medical device is safe for patient use",
-        mainText: "Medical device is safe for patient use",
-        x: 400,
-        y: 100,
-        width: 220,
-        height: 80,
-      },
-      {
-        type: "goal",
-        idText: "G2",
-        value: "Hardware meets requirements",
-        mainText: "Hardware meets requirements",
-        x: 200,
-        y: 300,
-        width: 200,
-        height: 70,
-      },
-      {
-        type: "goal",
-        idText: "G3",
-        value: "Software meets requirements",
-        mainText: "Software meets requirements",
-        x: 450,
-        y: 300,
-        width: 200,
-        height: 70,
-      },
-      {
-        type: "goal",
-        idText: "G4",
-        value: "User safe operation",
-        mainText: "User safe operation",
-        x: 700,
-        y: 300,
-        width: 180,
-        height: 70,
-      },
-      {
-        type: "sacm",
-        idText: "Sn1",
-        value: "Hardware certification",
-        mainText: "Hardware certification",
-        x: 200,
-        y: 400,
-        width: 180,
-        height: 70,
-      },
-      {
-        type: "sacm",
-        idText: "Sn2",
-        value: "Software validation",
-        mainText: "Software validation",
-        x: 450,
-        y: 400,
-        width: 180,
-        height: 70,
-      },
-      {
-        type: "sacm",
-        idText: "Sn3",
-        value: "Usability testing",
-        mainText: "Usability testing",
-        x: 700,
-        y: 400,
-        width: 180,
-        height: 70,
-      },
-    ],
-    connections: [
-      { fromIndex: 0, toIndex: 1 },
-      { fromIndex: 1, toIndex: 2 },
-      { fromIndex: 1, toIndex: 3 },
-      { fromIndex: 1, toIndex: 4 },
-      { fromIndex: 2, toIndex: 5 },
-      { fromIndex: 3, toIndex: 6 },
-      { fromIndex: 4, toIndex: 7 },
-    ],
-  },
-};
+// Enhanced AI Processor Class
+class DiagramAIProcessor {
+  private domainKeywords: Map<string, string[]> = new Map();
+  private typePatterns: Map<string, RegExp[]> = new Map();
 
-// Example prompt suggestions
-const PROMPT_SUGGESTIONS = [
-  "Create a safety case diagram for autonomous vehicles",
-  "Generate a hazard analysis diagram",
-  "Create a software safety assurance diagram",
-  "Make a medical device safety diagram",
-  "Generate a basic GSN safety case structure",
-];
+  constructor() {
+    this.initializeKeywords();
+    this.initializePatterns();
+  }
 
-const AiPanel: React.FC = () => {
-  // Get diagram context to interact with diagram
-  // Removed unused destructured variables: setSelectedId, shapes
-  const { addShape, addConnection } = useDiagramContext();
+  private initializeKeywords(): void {
+    this.domainKeywords = new Map([
+      ['automotive', ['vehicle', 'car', 'automotive', 'driving', 'autonomous', 'brake', 'engine']],
+      ['medical', ['medical', 'healthcare', 'patient', 'device', 'clinical', 'hospital', 'therapy']],
+      ['aviation', ['aircraft', 'aviation', 'flight', 'pilot', 'air', 'runway', 'navigation']],
+      ['software', ['software', 'code', 'program', 'system', 'application', 'api', 'database']],
+      ['nuclear', ['nuclear', 'reactor', 'radiation', 'power plant', 'isotope', 'containment']],
+      ['industrial', ['factory', 'manufacturing', 'production', 'machine', 'assembly', 'quality']]
+    ]);
+  }
 
-  // State for messages
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      content:
-        "Hello! I'm your diagram assistant. Tell me what kind of diagram you'd like me to create for you, and I'll generate it automatically.",
+  private initializePatterns(): void {
+    this.typePatterns = new Map([
+      ['safety_case', [/safety\s+case/i, /gsn/i, /goal\s+structuring/i, /assurance/i]],
+      ['hazard_analysis', [/hazard/i, /risk/i, /fmea/i, /fault\s+tree/i, /threat/i]],
+      ['software_safety', [/software\s+safety/i, /verification/i, /validation/i, /v&v/i]],
+      ['flowchart', [/flowchart/i, /flow/i, /process/i, /workflow/i, /step/i]],
+      ['sequence', [/sequence/i, /interaction/i, /timeline/i, /message/i]],
+      ['architecture', [/architecture/i, /system\s+design/i, /component/i, /module/i]]
+    ]);
+  }
+
+  public analyzePrompt(prompt: string): DiagramIntent {
+    const lowerPrompt = prompt.toLowerCase();
+    
+    return {
+      type: this.detectType(lowerPrompt),
+      domain: this.detectDomain(lowerPrompt),
+      complexity: this.detectComplexity(lowerPrompt),
+      elements: this.extractElements(prompt),
+      structure: this.detectStructure(lowerPrompt)
+    };
+  }
+
+  private detectType(prompt: string): DiagramIntent['type'] {
+    for (const [type, patterns] of this.typePatterns) {
+      for (const pattern of patterns) {
+        if (pattern.test(prompt)) {
+          return type as DiagramIntent['type'];
+        }
+      }
+    }
+    return 'safety_case'; // default
+  }
+
+  private detectDomain(prompt: string): string {
+    for (const [domain, keywords] of this.domainKeywords) {
+      if (keywords.some(keyword => prompt.includes(keyword))) {
+        return domain;
+      }
+    }
+    return 'general';
+  }
+
+  private detectComplexity(prompt: string): 'simple' | 'medium' | 'complex' {
+    if (/simple|basic|quick|minimal/i.test(prompt)) return 'simple';
+    if (/complex|advanced|detailed|comprehensive/i.test(prompt)) return 'complex';
+    return 'medium';
+  }
+
+  private extractElements(prompt: string): string[] {
+    const elements: string[] = [];
+    
+    // Extract quoted strings
+    const quotes = prompt.match(/"([^"]+)"/g);
+    if (quotes) elements.push(...quotes.map(q => q.slice(1, -1)));
+    
+    // Extract numbered items
+    const numbered = prompt.match(/\d+\.\s*([^\n\.]+)/g);
+    if (numbered) elements.push(...numbered.map(n => n.replace(/^\d+\.\s*/, '')));
+    
+    // Extract bullet points
+    const bullets = prompt.match(/[-*•]\s*([^\n\-\*•]+)/g);
+    if (bullets) elements.push(...bullets.map(b => b.replace(/^[-*•]\s*/, '')));
+    
+    return elements;
+  }
+
+  private detectStructure(prompt: string): 'hierarchical' | 'sequential' | 'network' {
+    if (/sequence|step|flow|order/i.test(prompt)) return 'sequential';
+    if (/network|mesh|interconnect/i.test(prompt)) return 'network';
+    return 'hierarchical'; // default
+  }
+}
+
+// Enhanced Diagram Generator Class
+class IntelligentDiagramBuilder {
+  private diagramContext: any;
+  private aiProcessor: DiagramAIProcessor;
+
+  constructor(diagramContext: any) {
+    this.diagramContext = diagramContext;
+    this.aiProcessor = new DiagramAIProcessor();
+  }
+
+  public async generateFromPrompt(prompt: string): Promise<{ 
+    elements: number, 
+    connections: number, 
+    intent: DiagramIntent 
+  }> {
+    const intent = this.aiProcessor.analyzePrompt(prompt);
+    const template = this.getTemplate(intent);
+    
+    // Generate elements
+    const elements = this.createElements(template, intent);
+    const layout = this.calculateLayout(elements, intent);
+    
+    // Add to diagram
+    const elementIds = await this.addElementsToDiagram(layout.elements);
+    const connections = await this.addConnectionsToDiagram(elementIds, intent);
+    
+    return {
+      elements: elementIds.length,
+      connections: connections.length,
+      intent
+    };
+  }
+
+  private getTemplate(intent: DiagramIntent): any {
+    const templates = {
+      safety_case: {
+        elements: [
+          { type: 'goal', text: 'System is acceptably safe', idText: 'G1' },
+          { type: 'strategy', text: 'Argument by decomposition', idText: 'S1' },
+          { type: 'goal', text: 'Hardware is safe', idText: 'G2' },
+          { type: 'goal', text: 'Software is safe', idText: 'G3' },
+          { type: 'sacm', text: 'Test results', idText: 'Sn1' }
+        ]
+      },
+      hazard_analysis: {
+        elements: [
+          { type: 'goal', text: 'All hazards mitigated', idText: 'G1' },
+          { type: 'strategy', text: 'Argument by hazard analysis', idText: 'S1' },
+          { type: 'goal', text: 'Hazard 1 is mitigated', idText: 'G2' },
+          { type: 'goal', text: 'Hazard 2 is mitigated', idText: 'G3' }
+        ]
+      },
+      software_safety: {
+        elements: [
+          { type: 'goal', text: 'Software is acceptably safe', idText: 'G1' },
+          { type: 'strategy', text: 'Argument by V&V processes', idText: 'S1' },
+          { type: 'goal', text: 'Requirements are correct', idText: 'G2' },
+          { type: 'goal', text: 'Implementation is verified', idText: 'G3' }
+        ]
+      },
+      flowchart: {
+        elements: [
+          { type: 'ellipse', text: 'Start' },
+          { type: 'rectangle', text: 'Process' },
+          { type: 'diamond', text: 'Decision?' },
+          { type: 'ellipse', text: 'End' }
+        ]
+      },
+      sequence: {
+        elements: [
+          { type: 'rectangle', text: 'Actor A' },
+          { type: 'rectangle', text: 'System B' },
+          { type: 'rectangle', text: 'Service C' }
+        ]
+      },
+      architecture: {
+        elements: [
+          { type: 'rectangle', text: 'Frontend' },
+          { type: 'rectangle', text: 'Backend' },
+          { type: 'rectangle', text: 'Database' }
+        ]
+      }
+    };
+
+    return templates[intent.type] || templates.safety_case;
+  }
+
+  private createElements(template: any, intent: DiagramIntent): any[] {
+    // Use custom elements if provided, otherwise use template
+    const baseElements = intent.elements.length > 0 
+      ? intent.elements.map((text, i) => ({
+          type: this.determineElementType(text, intent.type),
+          text,
+          idText: this.generateIdText(intent.type, i)
+        }))
+      : template.elements;
+
+    return baseElements.map((el: any, i: number) => ({
+      ...el,
+      id: `elem_${Date.now()}_${i}`,
+      width: this.calculateWidth(el.text, intent.complexity),
+      height: this.calculateHeight(intent.complexity)
+    }));
+  }
+
+  private determineElementType(text: string, diagramType: string): string {
+    const lowerText = text.toLowerCase();
+    
+    switch (diagramType) {
+      case 'safety_case':
+        if (/goal|claim|objective/i.test(lowerText)) return 'goal';
+        if (/strategy|approach/i.test(lowerText)) return 'strategy';
+        if (/evidence|solution/i.test(lowerText)) return 'sacm';
+        return 'goal';
+      case 'flowchart':
+        if (/start|begin/i.test(lowerText)) return 'ellipse';
+        if (/end|finish/i.test(lowerText)) return 'ellipse';
+        if (/decision|check|if/i.test(lowerText)) return 'diamond';
+        return 'rectangle';
+      default:
+        return 'goal';
+    }
+  }
+
+  private generateIdText(type: string, index: number): string {
+    const prefixes = {
+      safety_case: ['G', 'S', 'Sn'],
+      hazard_analysis: ['H', 'R', 'M'],
+      flowchart: ['P', 'D', 'T']
+    };
+    const prefix = prefixes[type as keyof typeof prefixes]?.[index % 3] || 'E';
+    return `${prefix}${index + 1}`;
+  }
+
+  private calculateWidth(text: string, complexity: string): number {
+    const base = 120;
+    const textMultiplier = Math.min(2.5, text.length * 0.1);
+    const complexityMultiplier = complexity === 'complex' ? 1.3 : complexity === 'simple' ? 0.8 : 1;
+    return Math.max(base, base + textMultiplier * 20) * complexityMultiplier;
+  }
+
+  private calculateHeight(complexity: string): number {
+    const base = 60;
+    return complexity === 'complex' ? base * 1.2 : complexity === 'simple' ? base * 0.9 : base;
+  }
+
+  private calculateLayout(elements: any[], intent: DiagramIntent): { elements: any[] } {
+    switch (intent.structure) {
+      case 'sequential':
+        return this.sequentialLayout(elements);
+      case 'network':
+        return this.networkLayout(elements);
+      default:
+        return this.hierarchicalLayout(elements);
+    }
+  }
+
+  private hierarchicalLayout(elements: any[]): { elements: any[] } {
+    if (elements.length === 0) return { elements };
+    
+    elements[0].x = 400;
+    elements[0].y = 100;
+    
+    const children = elements.slice(1);
+    const cols = Math.ceil(Math.sqrt(children.length));
+    
+    children.forEach((el, i) => {
+      const row = Math.floor(i / cols);
+      const col = i % cols;
+      el.x = 200 + col * (el.width + 80);
+      el.y = 250 + row * (el.height + 80);
+    });
+    
+    return { elements };
+  }
+
+  private sequentialLayout(elements: any[]): { elements: any[] } {
+    let currentY = 100;
+    elements.forEach(el => {
+      el.x = 400;
+      el.y = currentY;
+      currentY += el.height + 80;
+    });
+    return { elements };
+  }
+
+  private networkLayout(elements: any[]): { elements: any[] } {
+    const centerX = 400, centerY = 300, radius = 150;
+    elements.forEach((el, i) => {
+      const angle = (2 * Math.PI * i) / elements.length;
+      el.x = centerX + radius * Math.cos(angle);
+      el.y = centerY + radius * Math.sin(angle);
+    });
+    return { elements };
+  }
+
+  private async addElementsToDiagram(elements: any[]): Promise<string[]> {
+    const ids: string[] = [];
+    
+    for (const element of elements) {
+      const shapeId = `shape_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+      ids.push(shapeId);
+      
+      this.diagramContext.addShape({
+        id: shapeId,
+        type: element.type,
+        title: element.text,
+        text: element.text,
+        mainText: element.text,
+        x: element.x,
+        y: element.y,
+        width: element.width,
+        height: element.height,
+        idText: element.idText,
+        preview: null,
+        cornerRadius: element.type === 'strategy' ? 5 : undefined
+      });
+    }
+    
+    return ids;
+  }
+
+  private async addConnectionsToDiagram(elementIds: string[], intent: DiagramIntent): Promise<string[]> {
+    const connectionIds: string[] = [];
+    
+    setTimeout(() => {
+      switch (intent.structure) {
+        case 'sequential':
+          for (let i = 0; i < elementIds.length - 1; i++) {
+            const connId = `conn_${Date.now()}_${i}`;
+            connectionIds.push(connId);
+            this.diagramContext.addConnection({
+              id: connId,
+              from: elementIds[i],
+              to: elementIds[i + 1],
+              points: [],
+              style: 'line'
+            });
+          }
+          break;
+        case 'hierarchical':
+        default:
+          if (elementIds.length > 1) {
+            const root = elementIds[0];
+            elementIds.slice(1).forEach((id, i) => {
+              const connId = `conn_${Date.now()}_${i}`;
+              connectionIds.push(connId);
+              this.diagramContext.addConnection({
+                id: connId,
+                from: root,
+                to: id,
+                points: [],
+                style: 'line'
+              });
+            });
+          }
+          break;
+      }
+    }, 200);
+    
+    return connectionIds;
+  }
+}
+
+// Enhanced Chat Manager
+class DiagramChatManager {
+  private messages: Message[] = [];
+  private diagramBuilder: IntelligentDiagramBuilder;
+  private messageCallbacks: ((messages: Message[]) => void)[] = [];
+
+  constructor(diagramContext: any) {
+    this.diagramBuilder = new IntelligentDiagramBuilder(diagramContext);
+    this.initializeChat();
+  }
+
+  private initializeChat(): void {
+    this.addMessage({
+      content: "Hello! I'm your intelligent diagram assistant. I can create sophisticated diagrams from natural language descriptions.\n\nTry asking me to:\n• Create a safety case for autonomous vehicles\n• Generate a hazard analysis for medical devices\n• Build a flowchart for user authentication\n\nWhat would you like to create?",
       sender: "ai",
-      timestamp: new Date(),
-    },
-  ]);
+      type: "text"
+    });
+  }
 
+  public async processMessage(userInput: string): Promise<void> {
+    try {
+      this.addMessage({
+        content: userInput,
+        sender: "user",
+        type: "text"
+      });
+
+      // Determine if this is a generation request
+      if (this.isGenerationRequest(userInput)) {
+        this.addMessage({
+          content: "Analyzing your request and generating the diagram...",
+          sender: "ai",
+          type: "text"
+        });
+
+        const result = await this.diagramBuilder.generateFromPrompt(userInput);
+        
+        this.addMessage({
+          content: `I've created a ${result.intent.type.replace('_', ' ')} diagram for the ${result.intent.domain} domain. Generated ${result.elements} elements with ${result.connections} connections using ${result.intent.structure} layout.`,
+          sender: "ai",
+          type: "diagram",
+          confidence: this.calculateConfidence(result.intent),
+          metadata: {
+            diagramType: result.intent.type,
+            domain: result.intent.domain,
+            complexity: result.intent.complexity,
+            structure: result.intent.structure,
+            elementsCount: result.elements,
+            connectionsCount: result.connections
+          }
+        });
+        
+      } else {
+        // Provide guidance or analysis
+        this.addMessage({
+          content: this.generateGuidanceResponse(userInput),
+          sender: "ai",
+          type: "analysis"
+        });
+      }
+
+    } catch (error) {
+      console.error('Error processing message:', error);
+      this.addMessage({
+        content: "I encountered an error processing your request. Please try rephrasing or check the console for details.",
+        sender: "ai",
+        type: "error"
+      });
+    }
+  }
+
+  private isGenerationRequest(input: string): boolean {
+    return /create|generate|make|build|draw|design/i.test(input);
+  }
+
+  private calculateConfidence(intent: DiagramIntent): number {
+    let confidence = 0.5;
+    if (intent.domain !== 'general') confidence += 0.2;
+    if (intent.elements.length > 0) confidence += 0.2;
+    if (intent.type !== 'safety_case') confidence += 0.1;
+    return Math.min(1.0, confidence);
+  }
+
+  private generateGuidanceResponse(input: string): string {
+    if (/help|how/i.test(input)) {
+      return "I can help you create various types of diagrams:\n\n• Safety Cases (GSN diagrams)\n• Hazard Analysis diagrams\n• Flowcharts and process flows\n• Software safety diagrams\n• Architecture diagrams\n\nJust describe what you want to create, and I'll build it for you!";
+    }
+    
+    if (/analyze|review/i.test(input)) {
+      return "I can analyze your diagrams for completeness, structure, and best practices. To get started, please describe what specific aspects you'd like me to review.";
+    }
+    
+    return "I understand you're interested in diagram creation. Could you be more specific about what type of diagram you'd like me to create? For example: 'Create a safety case for automotive braking system' or 'Generate a flowchart for user registration process'.";
+  }
+
+  private addMessage(messageData: Omit<Message, 'id' | 'timestamp'>): void {
+    const message: Message = {
+      ...messageData,
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      timestamp: new Date()
+    };
+
+    this.messages.push(message);
+    this.notifyCallbacks();
+  }
+
+  public onMessagesChange(callback: (messages: Message[]) => void): void {
+    this.messageCallbacks.push(callback);
+  }
+
+  private notifyCallbacks(): void {
+    this.messageCallbacks.forEach(callback => callback([...this.messages]));
+  }
+
+  public getMessages(): Message[] {
+    return [...this.messages];
+  }
+
+  public clearMessages(): void {
+    this.messages = [];
+    this.initializeChat();
+    this.notifyCallbacks();
+  }
+}
+
+// Main Component
+const AiDiagramGen: React.FC = () => {
+  const diagramContext = useDiagramContext();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [chatManager, setChatManager] = useState<DiagramChatManager | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Initialize chat manager
+  useEffect(() => {
+    const manager = new DiagramChatManager(diagramContext);
+    manager.onMessagesChange(setMessages);
+    setMessages(manager.getMessages());
+    setChatManager(manager);
+  }, [diagramContext]);
+
+  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Process user input and respond accordingly
-  const processUserInput = (input: string) => {
-    const lowerInput = input.toLowerCase();
-    let templateToUse: DiagramTemplate;
-    let responseContent: string;
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || isGenerating || !chatManager) return;
 
-    if (
-      lowerInput.includes("autonomous") ||
-      lowerInput.includes("vehicle")
-    ) {
-      templateToUse = DIAGRAM_TEMPLATES.autonomous_vehicle;
-      responseContent =
-        "I'll generate an autonomous vehicle safety case diagram for you.";
-    } else if (lowerInput.includes("hazard")) {
-      templateToUse = DIAGRAM_TEMPLATES.hazard_analysis;
-      responseContent =
-        "I'll generate a hazard analysis diagram structure for you.";
-    } else if (lowerInput.includes("software")) {
-      templateToUse = DIAGRAM_TEMPLATES.software_safety;
-      responseContent =
-        "Creating a software safety assurance diagram as requested.";
-    } else if (
-      lowerInput.includes("medical") ||
-      lowerInput.includes("device")
-    ) {
-      templateToUse = DIAGRAM_TEMPLATES.medical_device;
-      responseContent =
-        "Generating a medical device safety case diagram structure.";
-    } else {
-      // Default to basic safety case
-      templateToUse = DIAGRAM_TEMPLATES.safety_case_basic;
-      responseContent =
-        "I'll create a basic safety case diagram structure for you.";
-    }
+    const userInput = inputValue;
+    setInputValue("");
+    setIsGenerating(true);
 
-    // Add AI response
-    const aiMessage: Message = {
-      id: Date.now().toString(),
-      content: responseContent,
-      sender: "ai",
-      timestamp: new Date(),
-      generatedDiagram: true,
-    };
-
-    setMessages((prev) => [...prev, aiMessage]);
-
-    // Generate the diagram
-    generateDiagram(templateToUse);
-  };
-
-  // Custom clear diagram function since clearDiagram doesn't exist in context
-  const clearCurrentDiagram = () => {
-    console.log("Clearing diagram - Note: clearDiagram method not available in context");
-    // Alternative: We can just add new shapes without clearing if clearDiagram doesn't exist
-  };
-
-  // Generate diagram based on template
-  const generateDiagram = (template: DiagramTemplate) => {
-    // Try to clear existing diagram first (if method exists)
     try {
-      clearCurrentDiagram();
+      await chatManager.processMessage(userInput);
     } catch (error) {
-      console.log("Clear diagram not available, proceeding with generation");
+      console.error('Error sending message:', error);
+    } finally {
+      setIsGenerating(false);
     }
-
-    // Create an array to store the actual IDs of created shapes
-    const createdShapeIds: string[] = [];
-
-    // Add shapes - Changed 'index' to '_' since it's not used
-    template.elements.forEach((element, _) => {
-      const shapeId =
-        Date.now().toString() + Math.random().toString(36).substr(2, 5);
-      createdShapeIds.push(shapeId);
-
-      addShape({
-        ...element,
-        id: shapeId,
-        // Ensure these properties are set
-        type: element.type || "goal",
-        title: element.title || element.value || "Element",
-        text: element.text || element.value || "Element",
-        mainText: element.mainText || element.value || "Element",
-        preview: null, // Will be rendered by the component
-        x: element.x || 100,
-        y: element.y || 100,
-        width: element.width || 150,
-        height: element.height || 70,
-        cornerRadius: element.type === "extension" ? 5 : undefined,
-      });
-    });
-
-    // Add connections after a short delay to ensure shapes are created
-    setTimeout(() => {
-      template.connections.forEach((connection) => {
-        if (createdShapeIds[connection.fromIndex] && createdShapeIds[connection.toIndex]) {
-          addConnection({
-            id: `conn-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-            from: createdShapeIds[connection.fromIndex],
-            to: createdShapeIds[connection.toIndex],
-            points: [],
-            style: "line",
-          });
-        }
-      });
-    }, 200);
   };
 
-  // Handle input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputValue(e.target.value);
-  };
-
-  // Handle key press (Enter to send)
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -517,58 +558,36 @@ const AiPanel: React.FC = () => {
     }
   };
 
-  // Handle sending messages
-  const handleSendMessage = () => {
-    if (!inputValue.trim() || isGenerating) return;
-
-    // Add user message
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: inputValue,
-      sender: "user",
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setIsGenerating(true);
-
-    // Process the input after a short delay
-    setTimeout(() => {
-      processUserInput(inputValue);
-      setInputValue("");
-      setIsGenerating(false);
-    }, 1000);
-  };
-
-  // Clear chat history
-  const clearChat = () => {
-    setMessages([
-      {
-        id: "welcome",
-        content: "Chat cleared! What kind of diagram would you like me to create?",
-        sender: "ai",
-        timestamp: new Date(),
-      },
-    ]);
-  };
-
-  // Use suggestion
   const useSuggestion = (suggestion: string) => {
     setInputValue(suggestion);
   };
 
+  const clearChat = () => {
+    if (chatManager) {
+      chatManager.clearMessages();
+    }
+  };
+
+  const ENHANCED_SUGGESTIONS = [
+    "Create a safety case for autonomous vehicle with sensor fusion and decision algorithms",
+    "Generate a hazard analysis for medical device with risk mitigation strategies",
+    "Build a software safety diagram with verification and validation processes",
+    "Create a flowchart for secure authentication with multi-factor verification",
+    "Design an architecture diagram for microservices with API gateways"
+  ];
+
   return (
     <div className="flex flex-col h-full bg-white border-l border-gray-200">
-      {/* Header */}
+      {/* Enhanced Header */}
       <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
         <div className="flex items-center space-x-3">
           <div className="bg-blue-100 rounded-full p-2">
-            <Sparkles size={20} className="text-blue-600" />
+            <Brain size={20} className="text-blue-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-800">AI Diagram Generator</h3>
+            <h3 className="font-semibold text-gray-800">Intelligent Diagram Generator</h3>
             <p className="text-xs text-gray-600">
-              Generate professional diagrams with AI assistance
+              Advanced AI-powered diagram creation with natural language processing
             </p>
           </div>
         </div>
@@ -588,24 +607,55 @@ const AiPanel: React.FC = () => {
                 className={`max-w-[85%] rounded-lg px-4 py-3 ${
                   message.sender === "user"
                     ? "bg-blue-600 text-white"
+                    : message.type === "error"
+                    ? "bg-red-50 text-red-800 border border-red-200"
+                    : message.type === "diagram"
+                    ? "bg-green-50 text-green-800 border border-green-200"
+                    : message.type === "analysis"
+                    ? "bg-purple-50 text-purple-800 border border-purple-200"
                     : "bg-gray-100 text-gray-800 border border-gray-200"
                 }`}
               >
+                <div className="flex items-center gap-2 mb-2">
+                  {message.sender === "user" ? (
+                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <Brain size={14} className="opacity-70" />
+                  )}
+                  <span className="text-xs opacity-70">
+                    {message.timestamp.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                  {message.type === "diagram" && (
+                    <span className="text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded-full">
+                      <Target size={10} className="inline mr-1" />
+                      Generated
+                    </span>
+                  )}
+                  {message.confidence && (
+                    <span className="text-xs bg-black/10 px-2 py-0.5 rounded-full">
+                      {Math.round(message.confidence * 100)}% confident
+                    </span>
+                  )}
+                </div>
                 <div className="text-sm leading-relaxed whitespace-pre-wrap">
                   {message.content}
                 </div>
-                {message.generatedDiagram && (
-                  <div className="mt-2 flex items-center text-xs opacity-75">
-                    <Zap size={12} className="mr-1" />
-                    Diagram generated
+                
+                {message.metadata && (
+                  <div className="mt-2 p-2 bg-black/5 rounded text-xs">
+                    <div className="grid grid-cols-2 gap-1">
+                      <div><strong>Type:</strong> {message.metadata.diagramType}</div>
+                      <div><strong>Domain:</strong> {message.metadata.domain}</div>
+                      <div><strong>Elements:</strong> {message.metadata.elementsCount}</div>
+                      <div><strong>Connections:</strong> {message.metadata.connectionsCount}</div>
+                    </div>
                   </div>
                 )}
-                <div className="text-xs mt-2 opacity-60">
-                  {message.timestamp.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </div>
               </div>
             </div>
           ))}
@@ -614,20 +664,12 @@ const AiPanel: React.FC = () => {
             <div className="flex justify-start">
               <div className="bg-gray-100 text-gray-800 rounded-lg px-4 py-3 border border-gray-200 max-w-[85%]">
                 <div className="flex items-center space-x-2">
-                  <div className="text-sm">Generating diagram...</div>
+                  <Brain size={16} className="animate-pulse" />
+                  <div className="text-sm">AI is analyzing and generating...</div>
                   <div className="flex space-x-1">
-                    <div
-                      className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
-                      style={{ animationDelay: "100ms" }}
-                    ></div>
-                    <div
-                      className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
-                      style={{ animationDelay: "200ms" }}
-                    ></div>
-                    <div
-                      className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
-                      style={{ animationDelay: "300ms" }}
-                    ></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "100ms" }}></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "200ms" }}></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
                   </div>
                 </div>
               </div>
@@ -637,29 +679,26 @@ const AiPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* Quick prompts */}
+      {/* Enhanced Quick prompts */}
       <div className="px-4 py-2 border-t border-gray-200">
         <div className="flex justify-between items-center mb-2">
           <div className="text-sm text-gray-600 flex items-center">
-            <Lightbulb size={14} className="mr-1" /> Quick prompts
+            <Lightbulb size={14} className="mr-1" /> Intelligent prompts
           </div>
-
-          <div className="flex space-x-2">
-            <button
-              className="text-gray-500 hover:text-gray-700 p-1"
-              onClick={clearChat}
-              title="Clear chat"
-            >
-              <Trash size={16} />
-            </button>
-          </div>
+          <button
+            className="text-gray-500 hover:text-gray-700 p-1"
+            onClick={clearChat}
+            title="Clear chat"
+          >
+            <Trash size={16} />
+          </button>
         </div>
 
         <div className="flex flex-wrap gap-2 mb-3">
-          {PROMPT_SUGGESTIONS.map((prompt, promptIndex) => (
+          {ENHANCED_SUGGESTIONS.map((prompt, index) => (
             <button
-              key={promptIndex} // Use promptIndex to avoid confusion
-              className="text-xs bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200"
+              key={index}
+              className="text-xs bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200 transition-colors"
               onClick={() => useSuggestion(prompt)}
             >
               {prompt}
@@ -668,44 +707,45 @@ const AiPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* Tab bar */}
-      <div className="border-t border-gray-200 flex">
-        <button className="flex-1 py-2 text-blue-600 border-t-2 border-blue-600 text-sm font-medium flex justify-center items-center">
-          <MessagesSquare size={16} className="mr-1" /> Chat
-        </button>
-        <button className="flex-1 py-2 text-gray-500 hover:text-gray-700 text-sm font-medium flex justify-center items-center">
-          <Settings size={16} className="mr-1" /> Settings
-        </button>
-      </div>
-
-      {/* Input area */}
+      {/* Enhanced Input area */}
       <div className="p-4 border-t border-gray-200">
         <div className="flex items-end">
           <div className="flex-grow relative">
             <textarea
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              placeholder="Describe the diagram you want to create..."
+              placeholder="Describe your diagram in detail... (e.g., 'Create a safety case for autonomous vehicle with perception, decision making, and actuation systems')"
               rows={2}
               value={inputValue}
-              onChange={handleInputChange}
+              onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyPress}
             />
           </div>
           <button
-            className={`ml-2 p-2 rounded-full ${
+            className={`ml-2 p-2 rounded-full transition-colors ${
               inputValue.trim()
-                ? "bg-blue-600 text-white"
+                ? "bg-blue-600 text-white hover:bg-blue-700"
                 : "bg-gray-200 text-gray-400"
             }`}
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isGenerating}
           >
-            <Send size={18} />
+            {isGenerating ? (
+              <div className="animate-spin">
+                <Zap size={18} />
+              </div>
+            ) : (
+              <Send size={18} />
+            )}
           </button>
+        </div>
+        
+        <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+          <span>Press Enter to send • Shift+Enter for new line</span>
+          <span>{messages.length} messages</span>
         </div>
       </div>
     </div>
   );
 };
 
-export default AiPanel;
+export default AiDiagramGen;
