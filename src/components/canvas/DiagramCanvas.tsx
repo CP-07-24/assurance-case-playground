@@ -52,7 +52,7 @@ const DiagramCanvas: React.FC = () => {
     setStageSize,
     cancelConnection,
     isConnecting,
-    // stageSize,
+    stageSize,
     clearSelection,
     toggleShapeSelection,
     deleteShape,
@@ -498,8 +498,8 @@ const DiagramCanvas: React.FC = () => {
       >
         <Stage
           ref={stageRef}
-          width={3000}
-          height={2000}
+          width={stageSize.width}
+          height={stageSize.height}
           scaleX={zoomLevel}
           scaleY={zoomLevel}
           onClick={handleStageClick}
@@ -508,7 +508,7 @@ const DiagramCanvas: React.FC = () => {
           onMouseUp={handleMouseUp}
         >
           <Layer>
-            <GridBackground width={3000} height={2000} spacing={20} />
+            <GridBackground width={window.innerWidth} height={window.innerHeight} spacing={20} />
           </Layer>
           <Layer>
             {connections.map((connection) => (

@@ -8,6 +8,7 @@ import { RouterProvider, useRouter } from "./router/RouterContext";
 import RouteIndicator from "./components/common/RouteIndicator";
 // TAMBAH: Import untuk handle direct URL access
 import { normalizeUrl } from "./router/utils";
+import { AuthProvider } from "./context/AuthContext";
 
 // Komponen wrapper untuk TemplateSelection yang menggunakan context
 const TemplateSelectionWrapper = ({
@@ -30,10 +31,10 @@ const TemplateSelectionWrapper = ({
 function AppContent() {
   // Router state
   const { currentView, navigate } = useRouter();
-  
+
   // Original state management - TETAP DIPERTAHANKAN
   const [view, setView] = useState<"landing" | "template-selection" | "editor">(currentView);
-  
+
   // Ref untuk mencegah infinite loops
   const isUpdatingRef = useRef(false);
 
@@ -41,7 +42,7 @@ function AppContent() {
   useEffect(() => {
     const currentPath = window.location.pathname;
     const normalizedPath = normalizeUrl(currentPath);
-    
+
     let expectedView: "landing" | "template-selection" | "editor" = "landing";
     switch (normalizedPath) {
       case '/templates':
@@ -53,7 +54,7 @@ function AppContent() {
       default:
         expectedView = "landing";
     }
-    
+
     if (currentView !== expectedView && !isUpdatingRef.current) {
       isUpdatingRef.current = true;
       navigate(expectedView);
@@ -66,7 +67,7 @@ function AppContent() {
   // Sync router currentView ke local view state (one way) - EXISTING CODE
   useEffect(() => {
     if (isUpdatingRef.current) return;
-    
+
     if (currentView !== view) {
       isUpdatingRef.current = true;
       setView(currentView);
@@ -80,11 +81,11 @@ function AppContent() {
   // Original function handlers - TETAP DIPERTAHANKAN SEMUA
   const handleUseTemplate = () => {
     if (isUpdatingRef.current) return;
-    
+
     isUpdatingRef.current = true;
     setView("template-selection");
     navigate("template-selection");
-    
+
     setTimeout(() => {
       isUpdatingRef.current = false;
     }, 0);
@@ -92,11 +93,11 @@ function AppContent() {
 
   const handleStartBlank = () => {
     if (isUpdatingRef.current) return;
-    
+
     isUpdatingRef.current = true;
     setView("editor");
     navigate("editor");
-    
+
     setTimeout(() => {
       isUpdatingRef.current = false;
     }, 0);
@@ -104,13 +105,13 @@ function AppContent() {
 
   const handleTemplateSelect = (template: string) => {
     console.log("Selected template:", template);
-    
+
     if (isUpdatingRef.current) return;
-    
+
     isUpdatingRef.current = true;
     setView("editor");
     navigate("editor");
-    
+
     setTimeout(() => {
       isUpdatingRef.current = false;
     }, 0);
@@ -135,9 +136,11 @@ function AppContent() {
       <div>
         {/* Route Indicator hanya untuk development */}
         {process.env.NODE_ENV === 'development' && <RouteIndicator />}
-        <DiagramProvider>
-          <TemplateSelectionWrapper onSelect={handleTemplateSelect} />
-        </DiagramProvider>
+        <AuthProvider>
+          <DiagramProvider>
+            <TemplateSelectionWrapper onSelect={handleTemplateSelect} />
+          </DiagramProvider>
+        </AuthProvider>
       </div>
     );
   }
@@ -146,9 +149,11 @@ function AppContent() {
     <div>
       {/* Route Indicator hanya untuk development */}
       {process.env.NODE_ENV === 'development' && <RouteIndicator />}
-      <DiagramProvider>
-        <MainLayout />
-      </DiagramProvider>
+      <AuthProvider>
+        <DiagramProvider>
+          <MainLayout />
+        </DiagramProvider>
+      </AuthProvider>
     </div>
   );
 }
