@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useDiagramContext } from "../store/DiagramContext";
 import { Shape, ShapeOnCanvas } from "../types/shapes";
 import { getDefaultShapeSize } from "../utils/shapeUtils";
+import { v4 as uuidv4 } from 'uuid';
 
 export const useDiagram = () => {
   const {
@@ -199,14 +200,17 @@ export const useDiagram = () => {
   const addShapeToCanvas = (shape: Shape) => {
     // Dapatkan ukuran default berdasarkan tipe shape
     const defaultSize = getDefaultShapeSize(shape.type);
+    const gridSize = 20; // Jarak antar shape
+    const startX = 100;
+    const startY = 100;
 
     const calculatedTextY = defaultSize.height / 2 - 8; // Posisi Y default untuk teks
 
     const newShape: ShapeOnCanvas = {
       ...shape,
-      id: Date.now().toString(),
-      x: 100,
-      y: 100,
+      // id: uuidv4(),
+      x: startX + (shapes.length * gridSize),
+      y: startY + (shapes.length * gridSize),
       width: defaultSize.width, // Gunakan width dari defaultSize
       height: defaultSize.height, // Gunakan height dari defaultSize
       textX: 12, // Margin dari kiri
@@ -215,7 +219,7 @@ export const useDiagram = () => {
       fontSizeId: 13, // Ukuran font default untuk ID
     };
     addShape(newShape);
-    setSelectedId(newShape.id);
+    // setSelectedId(newShape.id);
   };
 
   return {

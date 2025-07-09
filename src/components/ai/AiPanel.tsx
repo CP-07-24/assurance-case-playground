@@ -11,8 +11,9 @@ import {
 } from "lucide-react";
 import { useDiagramContext } from "../../store/DiagramContext";
 import { getAIResponse } from "../../services/aiService";
-import { ShapeOnCanvas } from "../../types/shapes";
+import { Shape } from "../../types/shapes";
 import { useAuth } from '../../context/AuthContext.tsx';
+import { useDiagram } from "../../hooks/useDiagram";
 
 type Message = {
   id: string;
@@ -30,6 +31,7 @@ const AiPanel: React.FC = () => {
     addShape,
     addConnection,
   } = useDiagramContext();
+  const { addShapeToCanvas } = useDiagram();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -61,13 +63,18 @@ const AiPanel: React.FC = () => {
     const lowerInput = input.toLowerCase();
 
     if (lowerInput.includes("generate") || lowerInput.includes("create")) {
-      return "I can generate these diagram types:\n1. Flowchart\n2. System Architecture\n3. Sequence Diagram\n\nWhich would you like?";
+      return "I can generate these diagram types:\n1. assurancecase\n2. System Architecture\n3. Sequence Diagram\n\nWhich would you like?";
     }
 
     if (lowerInput.includes("analyze") || lowerInput.includes("review")) {
       return `Diagram Analysis:\n\n• Elements: ${shapes.length
         }\n• Connections: ${connections.length}\n• Complexity: ${connections.length > 5 ? "High" : "Medium"
         }\n\nNeed optimization suggestions?`;
+    }
+
+    if (lowerInput.includes("assurancecase")) {
+      generateassurancecase();
+      return "A simple assurancecase has been generated for you.";
     }
 
     return await getAIResponse(input, getDiagramContext());
@@ -113,8 +120,8 @@ const AiPanel: React.FC = () => {
       };
       setMessages((prev) => [...prev, botMessage]);
 
-      if (inputValue.toLowerCase().includes("simple flowchart")) {
-        generateFlowchart();
+      if (inputValue.toLowerCase().includes("simple assurancecase")) {
+        generateassurancecase();
       }
     } catch (error) {
       console.error("Error processing message:", error);
@@ -133,39 +140,26 @@ const AiPanel: React.FC = () => {
     }
   };
 
-  const generateFlowchart = () => {
-    const newShapes: ShapeOnCanvas[] = [
+  const generateassurancecase = () => {
+    const newShapes: Shape[] = [
       {
-        id: "start",
-        type: "ellipse",
-        title: "Start Node",
-        preview: <div>Start</div>,
-        x: 200,
-        y: 100,
-        text: "Start",
-        width: 80,
-        height: 80,
-        mainText: ""
+        id: "G1",
+        type: "goal1",
+        mainText: "Goals",
       },
       {
-        id: "process",
-        type: "rectangle",
-        title: "Process",
-        preview: <div>Process</div>,
-        x: 200,
-        y: 220,
-        text: "Process",
-        width: 120,
-        height: 60,
-        mainText: ""
+        id: "C1",
+        type: "goal2",
+        mainText: "Context",
       },
     ];
 
-    newShapes.forEach((shape) => addShape(shape));
     addConnection({
-      id: "conn1", from: "start", to: "process", points: [],
-      style: "line"
+      id: "conn1", from: "G1", to: "C1", fromPoint: "bottom", toPoint: "top",
+      style: "line",
+      points: [],
     });
+    newShapes.forEach((shape) => addShapeToCanvas(shape));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -268,7 +262,7 @@ const AiPanel: React.FC = () => {
             Optimize
           </button>
           <button
-            onClick={() => setInputValue("Generate flowchart")}
+            onClick={() => setInputValue("assurancecase")}
             className="flex-shrink-0 flex items-center gap-2 px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <Workflow size={14} className="text-gray-600" />

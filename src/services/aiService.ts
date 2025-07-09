@@ -57,7 +57,7 @@ export const getAIResponse = async (prompt: string, diagramContext: string) => {
         messages: [
           {
             role: "system",
-            content: `You are a professional diagram assistant. Current diagram: ${diagramContext}`
+            content: `You are a professional assurance case diagram assistant that focus on GSN and SACM Templates. Current diagram: ${diagramContext}`
           },
           { role: "user", content: prompt }
         ],

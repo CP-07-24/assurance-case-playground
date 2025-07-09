@@ -1,11 +1,11 @@
 import React from "react";
 
 export interface Shape {
-  id: string;
+  id?: string;
   type: string;
-  title: string;
+  title?: string;
   mainText: string;
-  preview: React.ReactNode;
+  preview?: React.ReactNode;
   width?: number;
   height?: number;
   cornerRadius?: number;
