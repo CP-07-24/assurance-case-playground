@@ -9,9 +9,9 @@ import {
   X,
   Workflow,
 } from "lucide-react";
-import { useDiagramContext } from "../../store/DiagramContext";
+import { ConnectionWithPoints, useDiagramContext } from "../../store/DiagramContext";
 import { getAIResponse } from "../../services/aiService";
-import { Shape } from "../../types/shapes";
+import { Connection, Shape } from "../../types/shapes";
 import { useAuth } from '../../context/AuthContext.tsx';
 import { useDiagram } from "../../hooks/useDiagram";
 
@@ -77,7 +77,42 @@ const AiPanel: React.FC = () => {
       return "A simple assurancecase has been generated for you.";
     }
 
-    return await getAIResponse(input, getDiagramContext());
+    // ai
+    const airesponse = await getAIResponse(input, getDiagramContext());
+
+    const cleanResponse = airesponse.replace(/```json|```/g, '');
+
+    // 2. Ekstrak shapes dan connections menggunakan regex
+    const shapesMatch = cleanResponse.match(/shapes\s*=\s*(\[[^\]]*\])/s);
+    const connectionsMatch = cleanResponse.match(/connections\s*=\s*(\[[^\]]*\])/s);
+    let generatedshapes;
+    let generatedconnections;
+
+    if (shapesMatch && connectionsMatch) {
+      // 3. Convert string JavaScript-like objects to valid JSON
+      const shapesJsonString = shapesMatch[1]
+        .replace(/(\w+):/g, '"$1":')  // Ubah key: menjadi "key":
+        .replace(/'/g, '"');           // Ganti single quote dengan double quote
+
+      const connectionsJsonString = connectionsMatch[1]
+        .replace(/(\w+):/g, '"$1":')
+        .replace(/'/g, '"');
+
+      // 4. Parse ke JSON
+      generatedshapes = JSON.parse(shapesJsonString);
+      generatedconnections = JSON.parse(connectionsJsonString);
+    } else {
+      const { shapes = [], connections = [] } = JSON.parse(cleanResponse);
+      generatedshapes = shapes;
+      generatedconnections = connections;
+    }
+
+    generatedshapes.forEach((shape: Shape) => addShapeToCanvas(shape, generatedshapes.length));
+    generatedconnections.forEach((conn: Connection | ConnectionWithPoints) => addConnection(conn));
+
+    console.log("AI Response Shapes:", generatedshapes);
+    console.log("AI Response Connections:", generatedconnections);
+    return airesponse;
   };
 
   const handleSendMessage = async () => {
@@ -144,22 +179,28 @@ const AiPanel: React.FC = () => {
     const newShapes: Shape[] = [
       {
         id: "G1",
-        type: "goal1",
+        type: "goal",
         mainText: "Goals",
       },
       {
         id: "C1",
-        type: "goal2",
+        type: "context",
         mainText: "Context",
       },
     ];
 
-    addConnection({
-      id: "conn1", from: "G1", to: "C1", fromPoint: "bottom", toPoint: "top",
-      style: "line",
-      points: [],
-    });
-    newShapes.forEach((shape) => addShapeToCanvas(shape));
+    addConnection(
+      {
+        id: "conn1",
+        from: "G1",
+        to: "C1",
+        fromPoint: "bottom",
+        toPoint: "top",
+        style: "line",
+        points: [],
+      }
+    );
+    newShapes.forEach((shape) => addShapeToCanvas(shape, newShapes.length));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -247,7 +288,7 @@ const AiPanel: React.FC = () => {
       {/* Input Area - DeepSeek style */}
       <div className="p-4 border-t bg-gray-50">
         <div className="flex gap-2 mb-2 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pb-1">
-          <button
+          {/* <button
             onClick={() => setInputValue("Analyze my diagram")}
             className="flex-shrink-0 flex items-center gap-2 px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
@@ -260,9 +301,9 @@ const AiPanel: React.FC = () => {
           >
             <Wand2 size={14} className="text-gray-600" />
             Optimize
-          </button>
+          </button> */}
           <button
-            onClick={() => setInputValue("assurancecase")}
+            onClick={() => setInputValue("create GSN diagram")}
             className="flex-shrink-0 flex items-center gap-2 px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <Workflow size={14} className="text-gray-600" />

@@ -59,7 +59,7 @@ const TEMPLATES: Record<string, TemplateDefinition> = {
     shapes: [
       // Definisi shapes untuk template custom
       {
-        type: "goal1",
+        type: "goal",
         title: "Goals",
         x: 240,
         y: 48,
@@ -68,7 +68,7 @@ const TEMPLATES: Record<string, TemplateDefinition> = {
         text: "Complex Element",
       },
       {
-        type: "goal2",
+        type: "context",
         title: "Sub Element 1",
         x: 500,
         y: 64,
@@ -77,7 +77,7 @@ const TEMPLATES: Record<string, TemplateDefinition> = {
         text: "Sub Element 1",
       },
       {
-        type: "goal2",
+        type: "context",
         title: "Sub Element 2",
         x: 30,
         y: 64,
@@ -86,7 +86,7 @@ const TEMPLATES: Record<string, TemplateDefinition> = {
         text: "Sub Element 2",
       },
       {
-        type: "goal4",
+        type: "strategy",
         title: "Sub Element 3",
         x: 240,
         y: 250,
@@ -95,7 +95,7 @@ const TEMPLATES: Record<string, TemplateDefinition> = {
         text: "Sub Element 3",
       },
       {
-        type: "goal1",
+        type: "goal",
         title: "Goals",
         x: 40,
         y: 450,
@@ -104,7 +104,7 @@ const TEMPLATES: Record<string, TemplateDefinition> = {
         text: "Sub Element 4",
       },
       {
-        type: "goal1",
+        type: "goal",
         title: "Goals",
         x: 240,
         y: 450,
@@ -113,7 +113,7 @@ const TEMPLATES: Record<string, TemplateDefinition> = {
         text: "Sub Element 4",
       },
       {
-        type: "goal1",
+        type: "goal",
         title: "Goals",
         x: 440,
         y: 450,
@@ -122,7 +122,7 @@ const TEMPLATES: Record<string, TemplateDefinition> = {
         text: "Sub Element 4",
       },
       {
-        type: "goal3",
+        type: "solution",
         title: "Goals",
         x: 60,
         y: 600,
@@ -131,7 +131,7 @@ const TEMPLATES: Record<string, TemplateDefinition> = {
         text: "Sub Element 5",
       },
       {
-        type: "goal3",
+        type: "solution",
         title: "Goals",
         x: 360,
         y: 600,
@@ -256,7 +256,7 @@ const TEMPLATES: Record<string, TemplateDefinition> = {
   </svg>`,
     shapes: [
       {
-        type: "goal1",
+        type: "goal",
         title: "Sub Element 1",
         x: 240,
         y: 150,
@@ -265,7 +265,7 @@ const TEMPLATES: Record<string, TemplateDefinition> = {
         text: "Sub Element 1",
       },
       {
-        type: "goal1",
+        type: "goal",
         title: "Goals",
         x: 40,
         y: 350,
@@ -274,7 +274,7 @@ const TEMPLATES: Record<string, TemplateDefinition> = {
         text: "Sub Element 2",
       },
       {
-        type: "goal1",
+        type: "goal",
         title: "Goals",
         x: 240,
         y: 350,
@@ -283,7 +283,7 @@ const TEMPLATES: Record<string, TemplateDefinition> = {
         text: "Sub Element 2",
       },
       {
-        type: "goal1",
+        type: "goal",
         title: "Goals",
         x: 440,
         y: 350,

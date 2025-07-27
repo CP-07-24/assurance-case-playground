@@ -10,7 +10,7 @@ export const setApiKey = (key: string) => {
 
 export const validateApiKey = async (key: string): Promise<boolean> => {
   const API_URL = "https://api.chatanywhere.org/v1/chat/completions";
-  
+
   try {
     const response = await fetch(API_URL, {
       method: "POST",
@@ -57,9 +57,17 @@ export const getAIResponse = async (prompt: string, diagramContext: string) => {
         messages: [
           {
             role: "system",
-            content: `You are a professional assurance case diagram assistant that focus on GSN and SACM Templates. Current diagram: ${diagramContext}`
+            content: `You are a professional assurance case diagram assistant that focus on GSN and SACM Templates. 
+        Always respond with TWO SEPARATE JSON OBJECTS named 'shapes' and 'connections' in valid JavaScript object notation.
+        Example format:
+        shapes = [{ id: "G1", type: "goal", mainText: "Example goal" }];
+        connections = [{ id: "conn1", from: "G1", to: "S1", style: "line", fromPoint: "bottom", toPoint: "top"}];
+        Current diagram: ${diagramContext}`
           },
-          { role: "user", content: prompt }
+          {
+            role: "user",
+            content: `${prompt}\n\nPlease provide the response in two separate objects: shapes[] and connections[] as shown in the example.`
+          }
         ],
         temperature: 0.7
       })

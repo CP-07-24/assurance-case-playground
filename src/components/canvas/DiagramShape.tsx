@@ -289,17 +289,17 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
 
   const getDefaultPrefix = () => {
     switch (shape.type) {
-      case "goal1":
+      case "goal":
         return "G";
-      case "goal2":
+      case "context":
         return "C";
-      case "goal3":
+      case "solution":
         return "Sn";
-      case "goal4":
+      case "strategy":
         return "S";
-      case "goal5":
+      case "assumption":
         return "A";
-      case "goal6":
+      case "justification":
         return "J";
       case "goal8":
         return "U";
@@ -366,21 +366,21 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
     let svgContent = "";
 
     switch (shape.type) {
-      case "goal1":
+      case "goal":
         svgContent = `
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="157.28 125.38 76.04 51.49">
             <rect x="157.784" y="125.876" width="75.036" height="50.491" style="stroke: rgb(0, 0, 0); fill: none; stroke-width: 1;"/>
           </svg>
         `;
         break;
-      case "goal2":
+      case "context":
         svgContent = `
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="-0.47 -0.5 59.54 37.24">
             <path style="stroke: rgb(0, 0, 0); fill: none; stroke-width: 1;" d="M 7.304 0 L 51.52 0.154 C 62.608 7.221 58.996 34.757 51.732 36.243 L 7.152 36.082 C -1.786 34.697 -2.942 3.146 7.304 0 Z"/>
           </svg>
         `;
         break;
-      case "goal3":
+      case "solution":
         svgContent = `
           <svg
             viewBox="0 0 500 500"
@@ -399,14 +399,14 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
           </svg>
         `;
         break;
-      case "goal4":
+      case "strategy":
         svgContent = `
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="141.04 90.31 139.15 47.28">
             <path style="stroke: rgb(0, 0, 0); fill: none; stroke-width: 1;" d="M 164.489 90.813 L 141.538 137.097 L 256.293 136.743 L 279.687 91.52 L 164.489 90.813 Z"/>
           </svg>
         `;
         break;
-      case "goal5":
+      case "assumption":
         svgContent = `
           <svg viewBox="62.69 199 97.89 56.82" xmlns="http://www.w3.org/2000/svg">
             <ellipse style="stroke: rgb(0, 0, 0); fill: none; stroke-width: 1;" cx="111.64" cy="227.413" rx="48.446" ry="27.909"/>
@@ -414,7 +414,7 @@ const DiagramShape: React.FC<DiagramShapeProps> = ({
           </svg>
         `;
         break;
-      case "goal6":
+      case "justification":
         svgContent = `
           <svg viewBox="62.69 199 97.89 56.82" xmlns="http://www.w3.org/2000/svg">
             <ellipse style="stroke: rgb(0, 0, 0); fill: none; stroke-width: 1;" cx="111.64" cy="227.413" rx="48.446" ry="27.909"/>

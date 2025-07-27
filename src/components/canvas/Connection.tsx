@@ -78,10 +78,10 @@ const Connection: React.FC<ConnectionProps> = ({ connection }) => {
     // Tentukan ukuran default yang spesifik berdasarkan tipe
     switch (shape.type) {
       // Shapes persegi yang lebih lebar
-      case "goal1":
-      case "goal2":
-      case "goal5":
-      case "goal6":
+      case "goal":
+      case "context":
+      case "assumption":
+      case "justification":
       case "sacm1":
       case "sacm2":
       case "sacm6":
@@ -103,7 +103,7 @@ const Connection: React.FC<ConnectionProps> = ({ connection }) => {
         break;
 
       // Shapes lingkaran atau oval
-      case "goal3":
+      case "solution":
       case "sacm3":
       case "sacmExt9":
         defaultWidth = 100;
@@ -123,7 +123,7 @@ const Connection: React.FC<ConnectionProps> = ({ connection }) => {
         break;
 
       // Shapes yang perlu space horizontal lebih banyak
-      case "goal4":
+      case "strategy":
         defaultWidth = 200;
         defaultHeight = 80;
         break;

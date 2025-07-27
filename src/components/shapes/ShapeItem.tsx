@@ -15,7 +15,7 @@ const ShapeItem: React.FC<ShapeItemProps> = ({ shape }) => {
   };
 
   const handleClick = () => {
-    addShapeToCanvas(shape);
+    addShapeToCanvas(shape, 0);
   };
 
   return (

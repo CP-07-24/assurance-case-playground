@@ -21,22 +21,22 @@ export const getTextPositionsForShape = (
         idTextY: height * 0.17,
       };
 
-    case "goal3":
+    case "solution":
       return {
         mainTextX: width / 2,
         mainTextY: height / 4,
         idTextX: width / 6,
         idTextY: height * 0.17,
       };
-    case "goal4": // Persegi panjang lebar
+    case "strategy": // Persegi panjang lebar
       return {
         mainTextX: width / 2,
         mainTextY: height * 0.38,
         idTextX: width * 0.2,
         idTextY: height * 0.18,
       };
-    case "goal1":
-    case "goal2":
+    case "goal":
+    case "context":
     case "sacm1":
     case "sacm6":
     case "sacmExt5":
@@ -50,8 +50,8 @@ export const getTextPositionsForShape = (
         idTextX: width * 0.05,
         idTextY: height * 0.1,
       };
-    case "goal5":
-    case "goal6":
+    case "assumption":
+    case "justification":
       return {
         mainTextX: width / 2,
         mainTextY: height * 0.3,

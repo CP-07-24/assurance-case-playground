@@ -4,7 +4,7 @@ import { Shape } from "../types/shapes";
 export const gsnElements: Shape[] = [
   {
     id: "gsn-goal-1",
-    type: "goal1",
+    type: "goal",
     mainText: "Goals",
     title: "Goals",
     preview: (
@@ -31,7 +31,7 @@ export const gsnElements: Shape[] = [
   {
     id: "gsn-goal-2",
     mainText: "Context",
-    type: "goal2",
+    type: "context",
     title: "Context",
     preview: (
       <svg
@@ -54,7 +54,7 @@ export const gsnElements: Shape[] = [
   },
   {
     id: "gsn-goal-3",
-    type: "goal3",
+    type: "solution",
     mainText: "Solution",
     title: "Solution",
     preview: (
@@ -79,7 +79,7 @@ export const gsnElements: Shape[] = [
   {
     id: "gsn-goal-4",
     mainText: "Strategy",
-    type: "goal4",
+    type: "strategy",
     title: "Strategy",
     preview: (
       <svg
@@ -100,7 +100,7 @@ export const gsnElements: Shape[] = [
   },
   {
     id: "gsn-goal-5",
-    type: "goal5",
+    type: "assumption",
     mainText: "Assumptions",
     title: "Assumptions",
     preview: (
@@ -137,7 +137,7 @@ export const gsnElements: Shape[] = [
   {
     id: "gsn-goal-6",
     mainText: "Justifications",
-    type: "goal6",
+    type: "justification",
     title: "Justifications",
     preview: (
       <svg

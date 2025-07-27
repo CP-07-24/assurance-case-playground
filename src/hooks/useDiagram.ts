@@ -197,7 +197,7 @@ export const useDiagram = () => {
     isTextEmpty,
   ]);
 
-  const addShapeToCanvas = (shape: Shape) => {
+  const addShapeToCanvas = (shape: Shape, shapeslength: number) => {
     // Dapatkan ukuran default berdasarkan tipe shape
     const defaultSize = getDefaultShapeSize(shape.type);
     const gridSize = 20; // Jarak antar shape
@@ -209,8 +209,8 @@ export const useDiagram = () => {
     const newShape: ShapeOnCanvas = {
       ...shape,
       // id: uuidv4(),
-      x: startX + (shapes.length * gridSize),
-      y: startY + (shapes.length * gridSize),
+      x: startX + (shapeslength * gridSize),
+      y: startY + (shapeslength * gridSize),
       width: defaultSize.width, // Gunakan width dari defaultSize
       height: defaultSize.height, // Gunakan height dari defaultSize
       textX: 12, // Margin dari kiri

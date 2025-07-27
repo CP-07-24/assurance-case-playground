@@ -3,10 +3,10 @@ export const getDefaultShapeSize = (shapeType: string) => {
   // Ukuran default berdasarkan tipe shape
   switch (shapeType) {
     // Shapes persegi yang lebih lebar
-    case "goal1":
-    case "goal2":
-    case "goal5":
-    case "goal6":
+    case "goal":
+    case "context":
+    case "assumption":
+    case "justification":
     case "sacm1":
     case "sacm2":
     case "sacm6":
@@ -22,7 +22,7 @@ export const getDefaultShapeSize = (shapeType: string) => {
     case "extension3":
       return { width: 180, height: 100 };
     // Shapes lingkaran atau oval
-    case "goal3":
+    case "solution":
     case "sacm3":
     case "sacmExt9":
       return { width: 130, height: 130 }; // Ukuran sama agar lingkaran proporsional
@@ -34,7 +34,7 @@ export const getDefaultShapeSize = (shapeType: string) => {
     case "extension1":
       return { width: 50, height: 50 };
     // Shapes yang perlu space horizontal lebih banyak
-    case "goal4":
+    case "strategy":
       return { width: 200, height: 80 };
     // Shapes kompleks untuk diagram SACM
     case "sacmExt1":
