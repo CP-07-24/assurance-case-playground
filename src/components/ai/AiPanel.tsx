@@ -325,20 +325,20 @@ class AiPanel extends Component<AiPanelProps, AiPanelState> {
         {/* Input Area */}
         <div className="p-4 border-t bg-gray-50">
           <div className="flex gap-2 mb-2 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pb-1">
-            <button
+            {/* <button
               onClick={this.setAnalyzeInput}
               className="flex-shrink-0 flex items-center gap-2 px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <ListTree size={14} className="text-gray-600" />
               Analyze
-            </button>
-            <button
+            </button> */}
+            {/* <button
               onClick={this.setOptimizeInput}
               className="flex-shrink-0 flex items-center gap-2 px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Wand2 size={14} className="text-gray-600" />
               Optimize
-            </button>
+            </button> */}
             <button
               onClick={this.setGenerateInput}
               className="flex-shrink-0 flex items-center gap-2 px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
